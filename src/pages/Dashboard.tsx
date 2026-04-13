@@ -1,20 +1,18 @@
-import { useState } from "react";
 import { useChallenge } from "@/contexts/ChallengeContext";
-import { format, addDays, startOfWeek, differenceInDays, isBefore, isAfter, parseISO } from "date-fns";
+import { format, addDays, startOfWeek, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { AnimatedProgressBar } from "@/components/AnimatedProgressBar";
-import { Calendar, Settings, Dumbbell, ChevronRight, Moon, Flame, Heart, Zap } from "lucide-react";
+import { Settings, Dumbbell, ChevronRight, Moon, Flame, Heart, Zap, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 
 export default function Dashboard() {
   const { data, getDayLog, getDayNumber } = useChallenge();
   const navigate = useNavigate();
 
   if (!data.startDate) {
-    navigate("/setup");
-    return null;
+    return <Navigate to="/setup" replace />;
   }
 
   const startDate = parseISO(data.startDate);
