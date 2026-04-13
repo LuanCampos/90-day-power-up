@@ -64,6 +64,8 @@ export default function DayDetailPage() {
   };
 
   const totalCalories = log.calories.reduce((s, c) => s + c.amount, 0);
+  const dailyCalGoal = data.goals.dailyCalories;
+  const caloriesRemaining = dailyCalGoal > 0 ? Math.max(0, dailyCalGoal - totalCalories) : null;
 
   const handleSleep = () => {
     const hours = parseFloat(sleepInput);
@@ -95,15 +97,17 @@ export default function DayDetailPage() {
           <span className="text-sm">Voltar</span>
         </button>
 
-        {/* Day navigation */}
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => canGoPrev && navigate(`/day/${prevDate}${focusSection ? `?section=${focusSection}` : ""}`)}
-            disabled={!canGoPrev}
-            className="p-2 rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
+        {/* Day navigation — sem trocar dia quando veio de um card filtrado (?section=) */}
+        <div className={`flex items-center ${focusSection ? "justify-center" : "justify-between"}`}>
+          {!focusSection && (
+            <button
+              onClick={() => canGoPrev && navigate(`/day/${prevDate}`)}
+              disabled={!canGoPrev}
+              className="p-2 rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          )}
           <div className="text-center">
             <h1 className="text-2xl font-display font-bold text-foreground">
               {dayNum ? `Dia ${dayNum}` : date}
@@ -112,13 +116,15 @@ export default function DayDetailPage() {
               {format(currentDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
             </p>
           </div>
-          <button
-            onClick={() => canGoNext && navigate(`/day/${nextDate}${focusSection ? `?section=${focusSection}` : ""}`)}
-            disabled={!canGoNext}
-            className="p-2 rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
+          {!focusSection && (
+            <button
+              onClick={() => canGoNext && navigate(`/day/${nextDate}`)}
+              disabled={!canGoNext}
+              className="p-2 rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -126,14 +132,33 @@ export default function DayDetailPage() {
         {/* Calories */}
         {(showAll || focusSection === "calories") && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-5 rounded-2xl card-elevated border border-border space-y-4">
-            <div className="flex items-center gap-2">
-              <Flame className="w-5 h-5 text-energy" />
-              <h2 className="font-display font-semibold text-foreground">Calorias</h2>
-              <span className="ml-auto text-2xl font-display font-bold text-foreground">{totalCalories}</span>
-              <span className="text-sm text-muted-foreground">kcal</span>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Flame className="w-5 h-5 text-energy" />
+                <h2 className="font-display font-semibold text-foreground">Calorias</h2>
+              </div>
+              {caloriesRemaining !== null ? (
+                <>
+                  <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
+                    <span className="text-3xl font-display font-bold text-foreground tabular-nums">{caloriesRemaining}</span>
+                    <span className="text-sm font-medium text-muted-foreground">kcal restantes</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {totalCalories} consumidas de {dailyCalGoal} kcal
+                    {totalCalories > dailyCalGoal && (
+                      <span className="text-energy"> · {totalCalories - dailyCalGoal} kcal acima da meta</span>
+                    )}
+                  </p>
+                </>
+              ) : (
+                <div className="flex flex-wrap items-baseline gap-x-1.5">
+                  <span className="text-2xl font-display font-bold text-foreground tabular-nums">{totalCalories}</span>
+                  <span className="text-sm text-muted-foreground">kcal registradas</span>
+                </div>
+              )}
             </div>
             <AnimatedProgressBar
-              value={data.goals.dailyCalories > 0 ? (totalCalories / data.goals.dailyCalories) * 100 : 0}
+              value={dailyCalGoal > 0 ? (totalCalories / dailyCalGoal) * 100 : 0}
               variant="energy" size="sm" showPercentage={false}
             />
             <AnimatePresence>

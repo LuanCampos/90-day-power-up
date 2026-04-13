@@ -23,7 +23,9 @@ export default function Dashboard() {
   const todayLog = getDayLog(todayStr);
 
   const totalCalories = todayLog.calories.reduce((s, c) => s + c.amount, 0);
-  const calProgress = data.goals.dailyCalories > 0 ? (totalCalories / data.goals.dailyCalories) * 100 : 0;
+  const dailyCalGoal = data.goals.dailyCalories;
+  const caloriesRemaining = dailyCalGoal > 0 ? Math.max(0, dailyCalGoal - totalCalories) : null;
+  const calProgress = dailyCalGoal > 0 ? (totalCalories / dailyCalGoal) * 100 : 0;
   const sleepProgress = todayLog.sleepHours ? (todayLog.sleepHours / data.goals.dailySleepHours) * 100 : 0;
 
   // Weekly stats
@@ -44,15 +46,20 @@ export default function Dashboard() {
     {
       icon: <Flame className="w-5 h-5" />,
       label: "Calorias Hoje",
-      value: `${totalCalories}`,
-      sub: `/ ${data.goals.dailyCalories} kcal`,
+      value: caloriesRemaining !== null ? `${caloriesRemaining}` : `${totalCalories}`,
+      sub:
+        caloriesRemaining !== null
+          ? totalCalories >= dailyCalGoal
+            ? `Meta atingida · ${totalCalories} consumidas`
+            : `${totalCalories} consumidas · meta ${dailyCalGoal} kcal`
+          : `kcal consumidas`,
       progress: calProgress,
       variant: "energy" as const,
       path: `/day/${todayStr}?section=calories`,
     },
     {
       icon: <Moon className="w-5 h-5" />,
-      label: "Sono",
+      label: "Sono Hoje",
       value: todayLog.sleepHours ? `${todayLog.sleepHours}h` : "—",
       sub: `/ ${data.goals.dailySleepHours}h`,
       progress: sleepProgress,
@@ -145,7 +152,7 @@ export default function Dashboard() {
         <h2 className="text-sm font-display font-semibold text-muted-foreground uppercase tracking-wider">Ações Rápidas</h2>
 
         {[
-          { label: "Registrar Dia Atual", sub: "Calorias, treino, cardio, sono", icon: <Calendar className="w-5 h-5" />, path: `/day/${todayStr}` },
+          { label: "Registrar Dia", sub: "Calorias, treino, cardio, sono", icon: <Calendar className="w-5 h-5" />, path: `/day/${todayStr}` },
           { label: "Resumo da Semana", sub: "Veja seu progresso semanal", icon: <Zap className="w-5 h-5" />, path: "/weekly" },
           { label: "Meus Treinos", sub: "Gerenciar templates de treino", icon: <Dumbbell className="w-5 h-5" />, path: "/workouts" },
         ].map((action, i) => (
