@@ -17,13 +17,17 @@ export default function DayDetailPage() {
   } = useChallenge();
   const { celebrate, overlay } = useToastCelebration();
 
-  if (!date) return null;
-  const dayNum = getDayNumber(date);
-  const log = getDayLog(date);
+  const safeDate = date || "";
+  const dayNum = getDayNumber(safeDate);
+  const log = getDayLog(safeDate);
 
-  // Calorie input
   const [calAmount, setCalAmount] = useState("");
   const [calLabel, setCalLabel] = useState("");
+  const [sleepInput, setSleepInput] = useState(log.sleepHours?.toString() || "");
+  const [cardioMinutes, setCardioMinutes] = useState(log.cardio.minutes?.toString() || "");
+  const [cardioCals, setCardioCals] = useState(log.cardio.caloriesBurned?.toString() || "");
+
+  if (!date) return null;
 
   const handleAddCalorie = () => {
     const amount = parseInt(calAmount);
@@ -39,8 +43,6 @@ export default function DayDetailPage() {
 
   const totalCalories = log.calories.reduce((s, c) => s + c.amount, 0);
 
-  // Sleep input
-  const [sleepInput, setSleepInput] = useState(log.sleepHours?.toString() || "");
   const handleSleep = () => {
     const hours = parseFloat(sleepInput);
     if (!isNaN(hours) && hours > 0) {
@@ -51,9 +53,6 @@ export default function DayDetailPage() {
     }
   };
 
-  // Cardio
-  const [cardioMinutes, setCardioMinutes] = useState(log.cardio.minutes?.toString() || "");
-  const [cardioCals, setCardioCals] = useState(log.cardio.caloriesBurned?.toString() || "");
   const handleCardio = (done: boolean) => {
     setCardio(date, {
       done,
@@ -63,13 +62,9 @@ export default function DayDetailPage() {
     if (done) celebrate("goal", "Cardio registrado! 💪");
   };
 
-  // Check if day is fully complete
-  const isDayComplete = totalCalories > 0 && log.sleepHours && log.sleepHours > 0;
-
   return (
     <div className="min-h-screen bg-background pb-24">
       {overlay}
-      {/* Header */}
       <div className="px-5 pt-8 pb-4">
         <button onClick={() => navigate("/")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4">
           <ArrowLeft className="w-4 h-4" />
@@ -81,7 +76,7 @@ export default function DayDetailPage() {
       </div>
 
       <div className="px-5 space-y-5">
-        {/* Calories Section */}
+        {/* Calories */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-5 rounded-2xl card-elevated border border-border space-y-4">
           <div className="flex items-center gap-2">
             <Flame className="w-5 h-5 text-energy" />
@@ -91,21 +86,12 @@ export default function DayDetailPage() {
           </div>
           <AnimatedProgressBar
             value={data.goals.dailyCalories > 0 ? (totalCalories / data.goals.dailyCalories) * 100 : 0}
-            variant="energy"
-            size="sm"
-            showPercentage={false}
+            variant="energy" size="sm" showPercentage={false}
           />
-
-          {/* Entries */}
           <AnimatePresence>
             {log.calories.map((entry) => (
-              <motion.div
-                key={entry.id}
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="flex items-center justify-between py-2 border-b border-border"
-              >
+              <motion.div key={entry.id} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                className="flex items-center justify-between py-2 border-b border-border">
                 <div>
                   <span className="text-sm text-foreground">{entry.amount} kcal</span>
                   {entry.label && <span className="ml-2 text-xs text-muted-foreground">{entry.label}</span>}
@@ -116,29 +102,16 @@ export default function DayDetailPage() {
               </motion.div>
             ))}
           </AnimatePresence>
-
-          {/* Add */}
           <div className="flex gap-2">
-            <Input
-              placeholder="kcal"
-              type="number"
-              value={calAmount}
-              onChange={(e) => setCalAmount(e.target.value)}
-              className="w-24 bg-secondary border-border"
-            />
-            <Input
-              placeholder="Descrição (opcional)"
-              value={calLabel}
-              onChange={(e) => setCalLabel(e.target.value)}
-              className="flex-1 bg-secondary border-border"
-            />
+            <Input placeholder="kcal" type="number" value={calAmount} onChange={(e) => setCalAmount(e.target.value)} className="w-24 bg-secondary border-border" />
+            <Input placeholder="Descrição (opcional)" value={calLabel} onChange={(e) => setCalLabel(e.target.value)} className="flex-1 bg-secondary border-border" />
             <Button onClick={handleAddCalorie} size="icon" className="gradient-energy text-primary-foreground border-0 shrink-0">
               <Plus className="w-4 h-4" />
             </Button>
           </div>
         </motion.div>
 
-        {/* Workout Section */}
+        {/* Workout */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="p-5 rounded-2xl card-elevated border border-border space-y-3">
           <div className="flex items-center gap-2 mb-1">
             <Dumbbell className="w-5 h-5 text-success" />
@@ -152,19 +125,14 @@ export default function DayDetailPage() {
           ) : (
             <div className="grid grid-cols-2 gap-2">
               {data.workoutTemplates.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => {
-                    const newId = log.workout === t.id ? undefined : t.id;
-                    setWorkout(date, newId);
-                    if (newId) celebrate("goal", `Treino "${t.name}" registrado! 💪`);
-                  }}
+                <button key={t.id} onClick={() => {
+                  const newId = log.workout === t.id ? undefined : t.id;
+                  setWorkout(date, newId);
+                  if (newId) celebrate("goal", `Treino "${t.name}" registrado! 💪`);
+                }}
                   className={`p-3 rounded-xl text-sm font-medium transition-all border ${
-                    log.workout === t.id
-                      ? "border-success bg-success/10 text-success"
-                      : "border-border bg-secondary text-muted-foreground hover:border-primary/30"
-                  }`}
-                >
+                    log.workout === t.id ? "border-success bg-success/10 text-success" : "border-border bg-secondary text-muted-foreground hover:border-primary/30"
+                  }`}>
                   {log.workout === t.id && <Check className="w-3 h-3 inline mr-1" />}
                   {t.name}
                 </button>
@@ -173,74 +141,41 @@ export default function DayDetailPage() {
           )}
         </motion.div>
 
-        {/* Cardio Section */}
+        {/* Cardio */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="p-5 rounded-2xl card-elevated border border-border space-y-3">
           <div className="flex items-center gap-2 mb-1">
             <Heart className="w-5 h-5 text-fire" />
             <h2 className="font-display font-semibold text-foreground">Cardio</h2>
           </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => handleCardio(!log.cardio.done)}
-              variant={log.cardio.done ? "default" : "outline"}
-              className={log.cardio.done ? "gradient-energy text-primary-foreground border-0" : "border-border"}
-            >
-              {log.cardio.done ? "✓ Feito" : "Não fiz"}
-            </Button>
-          </div>
+          <Button onClick={() => handleCardio(!log.cardio.done)}
+            variant={log.cardio.done ? "default" : "outline"}
+            className={log.cardio.done ? "gradient-energy text-primary-foreground border-0" : "border-border"}>
+            {log.cardio.done ? "✓ Feito" : "Não fiz"}
+          </Button>
           {log.cardio.done && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="flex gap-2 pt-2">
-              <Input
-                placeholder="Minutos"
-                type="number"
-                value={cardioMinutes}
-                onChange={(e) => {
-                  setCardioMinutes(e.target.value);
-                  setCardio(date, { done: true, minutes: parseInt(e.target.value) || undefined, caloriesBurned: parseInt(cardioCals) || undefined });
-                }}
-                className="w-28 bg-secondary border-border"
-              />
-              <Input
-                placeholder="kcal queimadas"
-                type="number"
-                value={cardioCals}
-                onChange={(e) => {
-                  setCardioCals(e.target.value);
-                  setCardio(date, { done: true, minutes: parseInt(cardioMinutes) || undefined, caloriesBurned: parseInt(e.target.value) || undefined });
-                }}
-                className="flex-1 bg-secondary border-border"
-              />
+              <Input placeholder="Minutos" type="number" value={cardioMinutes}
+                onChange={(e) => { setCardioMinutes(e.target.value); setCardio(date, { done: true, minutes: parseInt(e.target.value) || undefined, caloriesBurned: parseInt(cardioCals) || undefined }); }}
+                className="w-28 bg-secondary border-border" />
+              <Input placeholder="kcal queimadas" type="number" value={cardioCals}
+                onChange={(e) => { setCardioCals(e.target.value); setCardio(date, { done: true, minutes: parseInt(cardioMinutes) || undefined, caloriesBurned: parseInt(e.target.value) || undefined }); }}
+                className="flex-1 bg-secondary border-border" />
             </motion.div>
           )}
         </motion.div>
 
-        {/* Sleep Section */}
+        {/* Sleep */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="p-5 rounded-2xl card-elevated border border-border space-y-3">
           <div className="flex items-center gap-2 mb-1">
             <Moon className="w-5 h-5 text-primary" />
             <h2 className="font-display font-semibold text-foreground">Sono</h2>
           </div>
           <div className="flex gap-2">
-            <Input
-              placeholder="Horas de sono"
-              type="number"
-              step="0.5"
-              value={sleepInput}
-              onChange={(e) => setSleepInput(e.target.value)}
-              className="w-32 bg-secondary border-border"
-            />
-            <Button onClick={handleSleep} className="gradient-success text-primary-foreground border-0">
-              Salvar
-            </Button>
+            <Input placeholder="Horas de sono" type="number" step="0.5" value={sleepInput} onChange={(e) => setSleepInput(e.target.value)} className="w-32 bg-secondary border-border" />
+            <Button onClick={handleSleep} className="gradient-success text-primary-foreground border-0">Salvar</Button>
           </div>
           {log.sleepHours && (
-            <AnimatedProgressBar
-              value={(log.sleepHours / data.goals.dailySleepHours) * 100}
-              label={`${log.sleepHours}h`}
-              sublabel={`/ ${data.goals.dailySleepHours}h`}
-              variant="success"
-              size="sm"
-            />
+            <AnimatedProgressBar value={(log.sleepHours / data.goals.dailySleepHours) * 100} label={`${log.sleepHours}h`} sublabel={`/ ${data.goals.dailySleepHours}h`} variant="success" size="sm" />
           )}
         </motion.div>
       </div>
