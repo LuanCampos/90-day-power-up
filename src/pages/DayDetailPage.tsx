@@ -132,31 +132,19 @@ export default function DayDetailPage() {
         {/* Calories */}
         {(showAll || focusSection === "calories") && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-5 rounded-2xl card-elevated border border-border space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Flame className="w-5 h-5 text-energy" />
-                <h2 className="font-display font-semibold text-foreground">Calorias</h2>
-              </div>
-              {caloriesRemaining !== null ? (
-                <>
-                  <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
-                    <span className="text-3xl font-display font-bold text-foreground tabular-nums">{caloriesRemaining}</span>
-                    <span className="text-sm font-medium text-muted-foreground">kcal restantes</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {totalCalories} consumidas de {dailyCalGoal} kcal
-                    {totalCalories > dailyCalGoal && (
-                      <span className="text-energy"> · {totalCalories - dailyCalGoal} kcal acima da meta</span>
-                    )}
-                  </p>
-                </>
-              ) : (
-                <div className="flex flex-wrap items-baseline gap-x-1.5">
-                  <span className="text-2xl font-display font-bold text-foreground tabular-nums">{totalCalories}</span>
-                  <span className="text-sm text-muted-foreground">kcal registradas</span>
-                </div>
-              )}
+            <div className="flex items-center gap-2">
+              <Flame className="w-5 h-5 text-energy" />
+              <h2 className="font-display font-semibold text-foreground">Calorias</h2>
+              <span className="ml-auto text-2xl font-display font-bold text-foreground tabular-nums">
+                {caloriesRemaining !== null ? caloriesRemaining : totalCalories}
+              </span>
+              <span className="text-sm text-muted-foreground">
+                {caloriesRemaining !== null ? "restantes" : "kcal"}
+              </span>
             </div>
+            {caloriesRemaining !== null && (
+              <p className="text-xs text-muted-foreground">{totalCalories} / {dailyCalGoal} kcal consumidas</p>
+            )}
             <AnimatedProgressBar
               value={dailyCalGoal > 0 ? (totalCalories / dailyCalGoal) * 100 : 0}
               variant="energy" size="sm" showPercentage={false}
