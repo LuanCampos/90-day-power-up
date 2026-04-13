@@ -16,12 +16,29 @@ const defaultData: ChallengeData = {
   goals: defaultGoals,
   workoutTemplates: [],
   dayLogs: {},
+  feedback: { celebratedMilestones: [] },
 };
+
+function normalizeLoadedChallengeData(parsed: Partial<ChallengeData>): ChallengeData {
+  const celebrated = parsed.feedback?.celebratedMilestones;
+  return {
+    startDate: parsed.startDate ?? null,
+    goals: { ...defaultGoals, ...parsed.goals },
+    workoutTemplates: Array.isArray(parsed.workoutTemplates) ? parsed.workoutTemplates : [],
+    dayLogs: parsed.dayLogs && typeof parsed.dayLogs === "object" ? parsed.dayLogs : {},
+    feedback: {
+      celebratedMilestones: Array.isArray(celebrated) ? [...celebrated] : [],
+    },
+  };
+}
 
 function loadData(): ChallengeData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<ChallengeData>;
+      return normalizeLoadedChallengeData(parsed);
+    }
   } catch {
     // ignore invalid or missing persisted data
   }
@@ -47,6 +64,7 @@ interface ChallengeContextType {
   removeWorkoutTemplate: (id: string) => void;
   getDayNumber: (date: string) => number | null;
   resetChallenge: () => void;
+  addCelebratedMilestone: (milestoneId: string) => void;
 }
 
 const ChallengeContext = createContext<ChallengeContextType | null>(null);
@@ -144,11 +162,25 @@ export function ChallengeProvider({ children }: { children: React.ReactNode }) {
     setData(defaultData);
   }, []);
 
+  const addCelebratedMilestone = useCallback((milestoneId: string) => {
+    setData(prev => {
+      const existing = prev.feedback?.celebratedMilestones ?? [];
+      if (existing.includes(milestoneId)) return prev;
+      return {
+        ...prev,
+        feedback: {
+          ...prev.feedback,
+          celebratedMilestones: [...existing, milestoneId],
+        },
+      };
+    });
+  }, []);
+
   return (
     <ChallengeContext.Provider value={{
       data, setStartDate, setGoals, getDayLog, addCalorie, removeCalorie,
       setWorkout, setCardio, setSleep, addWorkoutTemplate, updateWorkoutTemplate,
-      removeWorkoutTemplate, getDayNumber, resetChallenge,
+      removeWorkoutTemplate, getDayNumber, resetChallenge, addCelebratedMilestone,
     }}>
       {children}
     </ChallengeContext.Provider>

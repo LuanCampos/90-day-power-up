@@ -4,7 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Plus, Trash2, GripVertical, Dumbbell } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Dumbbell } from "lucide-react";
+import { toast } from "@/components/ui/sonner";
 
 export default function WorkoutsPage() {
   const { data, addWorkoutTemplate, updateWorkoutTemplate, removeWorkoutTemplate } = useChallenge();
@@ -15,6 +16,7 @@ export default function WorkoutsPage() {
     if (!newName.trim()) return;
     addWorkoutTemplate({ name: newName.trim(), order: data.workoutTemplates.length });
     setNewName("");
+    toast.success("Treino adicionado.");
   };
 
   return (

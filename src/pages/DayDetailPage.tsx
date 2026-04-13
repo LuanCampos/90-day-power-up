@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useChallenge } from "@/contexts/ChallengeContext";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { format, addDays, parseISO, startOfWeek } from "date-fns";
@@ -7,7 +7,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AnimatedProgressBar } from "@/components/AnimatedProgressBar";
-import { useToastCelebration } from "@/components/CelebrationOverlay";
+import { useCelebration } from "@/components/CelebrationOverlay";
+import {
+  areWeeklyGoalsMet,
+  getDailyCaloriesTotal,
+  getWeekStats,
+  hasCelebratedMilestone,
+  isCalorieGoalMet,
+  isDayFullyComplete,
+  isSleepGoalMet,
+  weekMilestoneId,
+} from "@/lib/challenge-progress";
 import { ArrowLeft, Plus, X, Flame, Dumbbell, Heart, Moon, Check, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function DayDetailPage() {
@@ -17,9 +27,9 @@ export default function DayDetailPage() {
   const navigate = useNavigate();
   const {
     data, getDayLog, getDayNumber, addCalorie, removeCalorie,
-    setWorkout, setCardio, setSleep,
+    setWorkout, setCardio, setSleep, addCelebratedMilestone,
   } = useChallenge();
-  const { celebrate, overlay } = useToastCelebration();
+  const { celebrate, overlay } = useCelebration();
 
   const safeDate = date || "";
   const dayNum = getDayNumber(safeDate);
@@ -31,6 +41,46 @@ export default function DayDetailPage() {
   const [cardioMinutes, setCardioMinutes] = useState(log.cardio.minutes?.toString() || "");
   const [cardioCals, setCardioCals] = useState(log.cardio.caloriesBurned?.toString() || "");
 
+  const prevDayCompleteRef = useRef<{ date: string; complete: boolean } | null>(null);
+  const lastWeekFireRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const complete = isDayFullyComplete(log, data.goals, data.workoutTemplates.length);
+    const prev = prevDayCompleteRef.current;
+    if (!prev || prev.date !== safeDate) {
+      prevDayCompleteRef.current = { date: safeDate, complete };
+      return;
+    }
+    if (!prev.complete && complete) {
+      celebrate("day", "Dia completo! Todas as metas de hoje estão em dia.");
+    }
+    prevDayCompleteRef.current = { date: safeDate, complete };
+  }, [log, data.goals, data.workoutTemplates.length, safeDate, celebrate]);
+
+  useEffect(() => {
+    if (!date || !data.startDate) return;
+    const detailWeekStart = startOfWeek(parseISO(date), { weekStartsOn: 1 });
+    const todayWeek = startOfWeek(new Date(), { weekStartsOn: 1 });
+    if (todayWeek.getTime() !== detailWeekStart.getTime()) return;
+    const { weekWorkouts, weekCardios } = getWeekStats(detailWeekStart, getDayLog);
+    if (!areWeeklyGoalsMet(weekWorkouts, weekCardios, data.goals)) return;
+    const id = weekMilestoneId(detailWeekStart);
+    if (lastWeekFireRef.current === id) return;
+    if (hasCelebratedMilestone(data.feedback?.celebratedMilestones, id)) return;
+    lastWeekFireRef.current = id;
+    addCelebratedMilestone(id);
+    celebrate("week", "Semana fechada: metas de treino e cardio batidas!");
+  }, [
+    date,
+    data.startDate,
+    data.dayLogs,
+    data.goals,
+    data.feedback?.celebratedMilestones,
+    getDayLog,
+    addCelebratedMilestone,
+    celebrate,
+  ]);
+
   if (!date) return null;
 
   const currentDate = parseISO(date);
@@ -41,12 +91,11 @@ export default function DayDetailPage() {
   const canGoPrev = prevDayNum !== null;
   const canGoNext = nextDayNum !== null;
 
-  // Get workouts already done this week
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekWorkoutIds = new Set<string>();
   for (let i = 0; i < 7; i++) {
     const d = format(addDays(weekStart, i), "yyyy-MM-dd");
-    if (d === date) continue; // exclude current day
+    if (d === date) continue;
     const dayLog = getDayLog(d);
     if (dayLog.workout) weekWorkoutIds.add(dayLog.workout);
   }
@@ -54,36 +103,43 @@ export default function DayDetailPage() {
   const handleAddCalorie = () => {
     const amount = parseInt(calAmount);
     if (isNaN(amount) || amount <= 0) return;
+    const prevTotal = getDailyCaloriesTotal(log);
     addCalorie(date, { amount, label: calLabel || undefined });
     setCalAmount("");
     setCalLabel("");
-    const newTotal = log.calories.reduce((s, c) => s + c.amount, 0) + amount;
-    if (newTotal >= data.goals.dailyCalories && log.calories.reduce((s, c) => s + c.amount, 0) < data.goals.dailyCalories) {
-      celebrate("goal", "Meta de calorias atingida! 🔥");
+    const newTotal = prevTotal + amount;
+    if (
+      data.goals.dailyCalories > 0 &&
+      prevTotal < data.goals.dailyCalories &&
+      newTotal >= data.goals.dailyCalories
+    ) {
+      celebrate("goal", "Meta de calorias atingida!");
     }
   };
 
-  const totalCalories = log.calories.reduce((s, c) => s + c.amount, 0);
+  const totalCalories = getDailyCaloriesTotal(log);
   const dailyCalGoal = data.goals.dailyCalories;
   const caloriesRemaining = dailyCalGoal > 0 ? Math.max(0, dailyCalGoal - totalCalories) : null;
 
   const handleSleep = () => {
     const hours = parseFloat(sleepInput);
-    if (!isNaN(hours) && hours > 0) {
-      setSleep(date, hours);
-      if (hours >= data.goals.dailySleepHours) {
-        celebrate("goal", "Meta de sono atingida! 😴");
-      }
+    if (isNaN(hours) || hours <= 0) return;
+    const wasMet = isSleepGoalMet(log, data.goals);
+    const nextLog = { ...log, sleepHours: hours };
+    setSleep(date, hours);
+    if (!wasMet && isSleepGoalMet(nextLog, data.goals)) {
+      celebrate("goal", "Meta de sono atingida!");
     }
   };
 
   const handleCardio = (done: boolean) => {
+    const turningOn = done && !log.cardio.done;
     setCardio(date, {
       done,
       minutes: parseInt(cardioMinutes) || undefined,
       caloriesBurned: parseInt(cardioCals) || undefined,
     });
-    if (done) celebrate("goal", "Cardio registrado! 💪");
+    if (turningOn) celebrate("goal", "Cardio registrado!");
   };
 
   const showAll = !focusSection;
@@ -97,7 +153,6 @@ export default function DayDetailPage() {
           <span className="text-sm">Voltar</span>
         </button>
 
-        {/* Day navigation — sem trocar dia quando veio de um card filtrado (?section=) */}
         <div className={`flex items-center ${focusSection ? "justify-center" : "justify-between"}`}>
           {!focusSection && (
             <button
@@ -129,7 +184,6 @@ export default function DayDetailPage() {
       </div>
 
       <div className="px-5 space-y-5">
-        {/* Calories */}
         {(showAll || focusSection === "calories") && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-5 rounded-2xl card-elevated border border-border space-y-4">
             <div className="flex items-center gap-2">
@@ -142,6 +196,9 @@ export default function DayDetailPage() {
                 {caloriesRemaining !== null ? "restantes" : "kcal"}
               </span>
             </div>
+            {isCalorieGoalMet(log, data.goals) && dailyCalGoal > 0 && (
+              <p className="text-xs font-medium text-success">Meta atingida</p>
+            )}
             {caloriesRemaining !== null && (
               <p className="text-xs text-muted-foreground">{totalCalories} / {dailyCalGoal} kcal consumidas</p>
             )}
@@ -173,12 +230,14 @@ export default function DayDetailPage() {
           </motion.div>
         )}
 
-        {/* Workout */}
         {(showAll || focusSection === "workout") && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="p-5 rounded-2xl card-elevated border border-border space-y-3">
             <div className="flex items-center gap-2 mb-1">
               <Dumbbell className="w-5 h-5 text-success" />
               <h2 className="font-display font-semibold text-foreground">Treino</h2>
+              {log.workout && data.workoutTemplates.length > 0 && (
+                <span className="ml-auto text-xs font-medium text-success">Feito hoje</span>
+              )}
             </div>
             {data.workoutTemplates.length === 0 ? (
               <p className="text-sm text-muted-foreground">
@@ -194,7 +253,7 @@ export default function DayDetailPage() {
                     <button key={t.id} onClick={() => {
                       const newId = isSelectedToday ? undefined : t.id;
                       setWorkout(date, newId);
-                      if (newId) celebrate("goal", `Treino "${t.name}" registrado! 💪`);
+                      if (newId) celebrate("goal", `Treino "${t.name}" registrado!`);
                     }}
                       className={`p-3 rounded-xl text-sm font-medium transition-all border ${
                         isSelectedToday
@@ -218,7 +277,6 @@ export default function DayDetailPage() {
           </motion.div>
         )}
 
-        {/* Cardio */}
         {(showAll || focusSection === "cardio") && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="p-5 rounded-2xl card-elevated border border-border space-y-3">
             <div className="flex items-center gap-2 mb-1">
@@ -243,18 +301,20 @@ export default function DayDetailPage() {
           </motion.div>
         )}
 
-        {/* Sleep */}
         {(showAll || focusSection === "sleep") && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="p-5 rounded-2xl card-elevated border border-border space-y-3">
             <div className="flex items-center gap-2 mb-1">
               <Moon className="w-5 h-5 text-primary" />
               <h2 className="font-display font-semibold text-foreground">Sono</h2>
+              {isSleepGoalMet(log, data.goals) && data.goals.dailySleepHours > 0 && (
+                <span className="ml-auto text-xs font-medium text-success">Meta atingida</span>
+              )}
             </div>
             <div className="flex gap-2">
               <Input placeholder="Horas de sono" type="number" step="0.5" value={sleepInput} onChange={(e) => setSleepInput(e.target.value)} className="w-32 bg-secondary border-border" />
               <Button onClick={handleSleep} className="gradient-success text-primary-foreground border-0">Salvar</Button>
             </div>
-            {log.sleepHours && (
+            {log.sleepHours && data.goals.dailySleepHours > 0 && (
               <AnimatedProgressBar value={(log.sleepHours / data.goals.dailySleepHours) * 100} label={`${log.sleepHours}h`} sublabel={`/ ${data.goals.dailySleepHours}h`} variant="success" size="sm" />
             )}
           </motion.div>

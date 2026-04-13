@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "@/components/ui/sonner";
 
 export default function SetupPage() {
   const { setStartDate } = useChallenge();
@@ -17,6 +18,7 @@ export default function SetupPage() {
   const handleStart = () => {
     if (date) {
       setStartDate(format(date, "yyyy-MM-dd"));
+      toast.success("Desafio iniciado! Bom começo.");
       navigate("/");
     }
   };

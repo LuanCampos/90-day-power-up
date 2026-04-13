@@ -1,5 +1,5 @@
 ---
-description: Toda alteração deve passar TypeScript, lint e build; sem suposições — perguntar ao usuário.
+description: Toda alteração deve passar TypeScript, lint, testes e build; sem suposições — perguntar ao usuário.
 alwaysApply: true
 ---
 
@@ -9,11 +9,12 @@ Antes de considerar o trabalho **concluído** (incluindo ao final de uma sessão
 
 1. **TypeScript** — checagem de tipos sem emitir arquivos (ex.: `npx tsc --noEmit`, ou o comando/script que o repositório definir para isso).
 2. **Lint** — ex.: `npm run lint` (ou o equivalente do gerenciador de pacotes do projeto).
-3. **Build** — ex.: `npm run build` (ou o script de build oficial do projeto).
+3. **Testes** — ex.: `npm run test` (ou o script de testes oficial do projeto; aqui costuma ser Vitest).
+4. **Build** — ex.: `npm run build` (ou o script de build oficial do projeto).
 
 Se algum desses passos falhar, **corrigir os problemas** ou **parar e explicar o bloqueio** com o que falhou e o que falta; não declarar sucesso sem validação.
 
-Se o repositório passar a expor scripts dedicados (por exemplo `typecheck`), **preferir os scripts do projeto** em vez dos comandos genéricos acima.
+Se o repositório passar a expor scripts dedicados (por exemplo `typecheck` ou `test:run`), **preferir os scripts do projeto** em vez dos comandos genéricos acima.
 
 ---
 
@@ -29,5 +30,5 @@ Se o repositório passar a expor scripts dedicados (por exemplo `typecheck`), **
 
 - **Evitar:** assumir que "melhorar o formulário" significa validação Zod sem confirmar regras de negócio.
 - **Preferir:** perguntar quais campos são obrigatórios e quais mensagens de erro o usuário quer.
-- **Evitar:** encerrar após editar código sem rodar TypeScript, lint e build quando o ambiente permite executá-los.
-- **Preferir:** rodar a tríade (ou reportar falha e próximos passos) antes de afirmar que está pronto.
+- **Evitar:** encerrar após editar código sem rodar TypeScript, lint, testes e build quando o ambiente permite executá-los.
+- **Preferir:** rodar essa suíte completa (ou reportar falha e próximos passos) antes de afirmar que está pronto.

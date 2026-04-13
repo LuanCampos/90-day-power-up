@@ -31,9 +31,15 @@ export interface ChallengeGoals {
   weeklyWorkouts: number;
 }
 
+/** Marcos já celebrados (ex.: week-2026-W15, challenge-90-complete). */
+export interface ChallengeFeedbackState {
+  celebratedMilestones?: string[];
+}
+
 export interface ChallengeData {
   startDate: string | null; // YYYY-MM-DD
   goals: ChallengeGoals;
   workoutTemplates: WorkoutTemplate[];
   dayLogs: Record<string, DayLog>; // keyed by YYYY-MM-DD
+  feedback?: ChallengeFeedbackState;
 }

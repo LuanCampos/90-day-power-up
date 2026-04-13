@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from "@/components/ui/sonner";
 
 export default function SettingsPage() {
   const { data, setGoals, resetChallenge } = useChallenge();
@@ -14,6 +15,7 @@ export default function SettingsPage() {
 
   const handleSave = () => {
     setGoals(goals);
+    toast.success("Metas salvas.");
     navigate("/");
   };
 
