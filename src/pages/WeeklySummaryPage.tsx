@@ -1,17 +1,18 @@
+import { useState } from "react";
 import { useChallenge } from "@/contexts/ChallengeContext";
 import { useNavigate } from "react-router-dom";
-import { format, addDays, startOfWeek } from "date-fns";
+import { format, addDays, startOfWeek, subWeeks, addWeeks } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion } from "framer-motion";
 import { AnimatedProgressBar } from "@/components/AnimatedProgressBar";
-import { ArrowLeft, Check, X, Flame, Moon, Dumbbell, Heart } from "lucide-react";
+import { ArrowLeft, Check, X, Flame, Moon, Dumbbell, Heart, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function WeeklySummaryPage() {
   const { data, getDayLog, getDayNumber } = useChallenge();
   const navigate = useNavigate();
 
-  const today = new Date();
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const [referenceDate, setReferenceDate] = useState(new Date());
+  const weekStart = startOfWeek(referenceDate, { weekStartsOn: 1 });
 
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = addDays(weekStart, i);
@@ -26,10 +27,14 @@ export default function WeeklySummaryPage() {
     return { d, dateStr, dayNum, log, totalCal, calMet, sleepMet, workoutTemplate };
   });
 
+  // Check if prev/next weeks have any days within the challenge
+  const prevWeekStart = subWeeks(weekStart, 1);
+  const nextWeekStart = addWeeks(weekStart, 1);
+  const hasPrevWeek = data.startDate && Array.from({ length: 7 }, (_, i) => getDayNumber(format(addDays(prevWeekStart, i), "yyyy-MM-dd"))).some(n => n !== null);
+  const hasNextWeek = data.startDate && Array.from({ length: 7 }, (_, i) => getDayNumber(format(addDays(nextWeekStart, i), "yyyy-MM-dd"))).some(n => n !== null);
+
   const weekWorkouts = days.filter(d => d.log.workout).length;
   const weekCardios = days.filter(d => d.log.cardio.done).length;
-  const daysCalMet = days.filter(d => d.calMet).length;
-  const daysSleepMet = days.filter(d => d.sleepMet).length;
 
   const StatusIcon = ({ met }: { met: boolean }) => met
     ? <Check className="w-4 h-4 text-success" />
@@ -43,9 +48,27 @@ export default function WeeklySummaryPage() {
           <span className="text-sm">Voltar</span>
         </button>
         <h1 className="text-2xl font-display font-bold text-foreground">Resumo da Semana</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {format(weekStart, "d MMM", { locale: ptBR })} — {format(addDays(weekStart, 6), "d MMM", { locale: ptBR })}
-        </p>
+
+        {/* Week navigation */}
+        <div className="flex items-center justify-between mt-3">
+          <button
+            onClick={() => hasPrevWeek && setReferenceDate(addDays(prevWeekStart, 3))}
+            disabled={!hasPrevWeek}
+            className="p-2 rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <p className="text-sm text-muted-foreground">
+            {format(weekStart, "d MMM", { locale: ptBR })} — {format(addDays(weekStart, 6), "d MMM", { locale: ptBR })}
+          </p>
+          <button
+            onClick={() => hasNextWeek && setReferenceDate(addDays(nextWeekStart, 3))}
+            disabled={!hasNextWeek}
+            className="p-2 rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Weekly Stats */}

@@ -48,6 +48,7 @@ export default function Dashboard() {
       sub: `/ ${data.goals.dailyCalories} kcal`,
       progress: calProgress,
       variant: "energy" as const,
+      path: `/day/${todayStr}?section=calories`,
     },
     {
       icon: <Moon className="w-5 h-5" />,
@@ -56,6 +57,7 @@ export default function Dashboard() {
       sub: `/ ${data.goals.dailySleepHours}h`,
       progress: sleepProgress,
       variant: "success" as const,
+      path: `/day/${todayStr}?section=sleep`,
     },
     {
       icon: <Dumbbell className="w-5 h-5" />,
@@ -64,6 +66,7 @@ export default function Dashboard() {
       sub: `/ ${data.goals.weeklyWorkouts}`,
       progress: workoutProgress,
       variant: "success" as const,
+      path: `/day/${todayStr}?section=workout`,
     },
     {
       icon: <Heart className="w-5 h-5" />,
@@ -72,6 +75,7 @@ export default function Dashboard() {
       sub: `/ ${data.goals.weeklyCardios}`,
       progress: cardioProgress,
       variant: "energy" as const,
+      path: `/day/${todayStr}?section=cardio`,
     },
   ];
 
@@ -115,12 +119,13 @@ export default function Dashboard() {
       {/* Stats Grid */}
       <div className="px-5 grid grid-cols-2 gap-3 mb-6">
         {statCards.map((card, i) => (
-          <motion.div
+          <motion.button
             key={card.label}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 * (i + 1) }}
-            className="p-4 rounded-2xl card-elevated border border-border"
+            onClick={() => navigate(card.path)}
+            className="p-4 rounded-2xl card-elevated border border-border text-left hover:border-primary/30 transition-colors"
           >
             <div className="flex items-center gap-2 mb-2 text-muted-foreground">
               {card.icon}
@@ -131,7 +136,7 @@ export default function Dashboard() {
               <span className="text-xs text-muted-foreground">{card.sub}</span>
             </div>
             <AnimatedProgressBar value={card.progress} variant={card.variant} size="sm" showPercentage={false} />
-          </motion.div>
+          </motion.button>
         ))}
       </div>
 
