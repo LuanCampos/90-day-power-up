@@ -48,6 +48,7 @@ export default function Dashboard() {
       sub: `/ ${data.goals.dailyCalories} kcal`,
       progress: calProgress,
       variant: "energy" as const,
+      path: `/day/${todayStr}?section=calories`,
     },
     {
       icon: <Moon className="w-5 h-5" />,
@@ -56,6 +57,7 @@ export default function Dashboard() {
       sub: `/ ${data.goals.dailySleepHours}h`,
       progress: sleepProgress,
       variant: "success" as const,
+      path: `/day/${todayStr}?section=sleep`,
     },
     {
       icon: <Dumbbell className="w-5 h-5" />,
@@ -64,6 +66,7 @@ export default function Dashboard() {
       sub: `/ ${data.goals.weeklyWorkouts}`,
       progress: workoutProgress,
       variant: "success" as const,
+      path: `/day/${todayStr}?section=workout`,
     },
     {
       icon: <Heart className="w-5 h-5" />,
@@ -72,6 +75,7 @@ export default function Dashboard() {
       sub: `/ ${data.goals.weeklyCardios}`,
       progress: cardioProgress,
       variant: "energy" as const,
+      path: `/day/${todayStr}?section=cardio`,
     },
   ];
 
