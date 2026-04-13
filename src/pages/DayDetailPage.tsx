@@ -150,7 +150,7 @@ export default function DayDetailPage() {
           <Button onClick={() => handleCardio(!log.cardio.done)}
             variant={log.cardio.done ? "default" : "outline"}
             className={log.cardio.done ? "gradient-energy text-primary-foreground border-0" : "border-border"}>
-            {log.cardio.done ? "✓ Feito" : "Não fiz"}
+            {log.cardio.done ? "✓ Feito" : "Marcar como feito"}
           </Button>
           {log.cardio.done && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="flex gap-2 pt-2">
