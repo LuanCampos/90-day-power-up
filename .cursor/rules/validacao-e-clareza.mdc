@@ -1,0 +1,33 @@
+---
+description: Toda alteração deve passar TypeScript, lint e build; sem suposições — perguntar ao usuário.
+alwaysApply: true
+---
+
+# Validação obrigatória antes de concluir alterações
+
+Antes de considerar o trabalho **concluído** (incluindo ao final de uma sessão ou antes de sugerir merge), o agente deve garantir que o projeto passa por:
+
+1. **TypeScript** — checagem de tipos sem emitir arquivos (ex.: `npx tsc --noEmit`, ou o comando/script que o repositório definir para isso).
+2. **Lint** — ex.: `npm run lint` (ou o equivalente do gerenciador de pacotes do projeto).
+3. **Build** — ex.: `npm run build` (ou o script de build oficial do projeto).
+
+Se algum desses passos falhar, **corrigir os problemas** ou **parar e explicar o bloqueio** com o que falhou e o que falta; não declarar sucesso sem validação.
+
+Se o repositório passar a expor scripts dedicados (por exemplo `typecheck`), **preferir os scripts do projeto** em vez dos comandos genéricos acima.
+
+---
+
+# Sem suposições: esclarecer com o usuário
+
+- **Não inferir** requisitos ambíguos (comportamento esperado, escopo, prioridades, nomes de APIs, UX, dados de exemplo, etc.) quando isso mudaria o resultado de forma relevante.
+- **Não preencher lacunas** com "provavelmente é assim" — em caso de dúvida, **perguntar ao usuário** com opções concretas ou perguntas objetivas até o pedido estar claro.
+- Se faltar informação para escolher entre abordagens, **listar as opções e os trade-offs** e pedir decisão em vez de escolher sozinho.
+
+---
+
+## Exemplos rápidos
+
+- **Evitar:** assumir que "melhorar o formulário" significa validação Zod sem confirmar regras de negócio.
+- **Preferir:** perguntar quais campos são obrigatórios e quais mensagens de erro o usuário quer.
+- **Evitar:** encerrar após editar código sem rodar TypeScript, lint e build quando o ambiente permite executá-los.
+- **Preferir:** rodar a tríade (ou reportar falha e próximos passos) antes de afirmar que está pronto.

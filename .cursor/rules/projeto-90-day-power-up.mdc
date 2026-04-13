@@ -1,0 +1,89 @@
+---
+description: Contexto do 90 Day Power Up — stack, domínio, estado, rotas e convenções para agentes.
+alwaysApply: true
+---
+
+# 90 Day Power Up — contexto do projeto
+
+Aplicação **web SPA** de acompanhamento de um **desafio de 90 dias**: calorias, sono, cardio, treinos semanais e templates de treino. **Não há backend** no repositório: tudo persiste no **navegador** via `localStorage`.
+
+Esta rule complementa **`validacao-e-clareza.mdc`**: antes de concluir trabalho, ainda é obrigatório **TypeScript + lint + build** (e **não assumir** requisitos ambíguos sem perguntar).
+
+---
+
+## Stack principal
+
+| Área | Escolha do repo |
+|------|------------------|
+| Build / dev | Vite 5, `@vitejs/plugin-react-swc`, dev server porta **8080** (`vite.config.ts`) |
+| UI | React 18, **react-router-dom** v6, **Tailwind** + **shadcn/ui** (Radix em `src/components/ui/`) |
+| Estado de negócio | **React Context** — `ChallengeProvider` em `src/contexts/ChallengeContext.tsx` |
+| Datas | **date-fns**; na UI as strings de dia são **`YYYY-MM-DD`** (alinhado a `format(..., "yyyy-MM-dd")` e tipos em `src/types/challenge.ts`) |
+| Formulários / validação | **react-hook-form**, **zod**, `@hookform/resolvers` (usar quando houver formulário novo, seguindo padrão existente nas páginas) |
+| Outras libs visuais | **framer-motion**, **lucide-react**, **recharts** (gráficos), toasts (**Sonner** + toaster shadcn) |
+| Testes | **Vitest** — `npm run test` |
+
+**Alias de import:** sempre `@/` → `src/` (ex.: `@/components/ui/button`, `@/contexts/ChallengeContext`).
+
+**TypeScript:** `strict` está **desligado** em `tsconfig.app.json`. Não inferir que o projeto exige padrões de strictness; ao adicionar código, **manter consistência** com o estilo existente e **evitar `any` desnecessário** mesmo assim.
+
+---
+
+## Domínio e modelo de dados
+
+- Tipos canônicos: **`src/types/challenge.ts`** (`ChallengeData`, `DayLog`, `ChallengeGoals`, `WorkoutTemplate`, etc.).
+- **Dia do desafio:** `getDayNumber(date)` retorna `1..90` ou `null` se fora do intervalo ou sem `startDate` — ver implementação em `ChallengeContext`.
+- **Chave do `localStorage`:** `fitness-challenge-90`. **Não renomear** sem estratégia de migração (usuários perdem dados).
+- Ao alterar o formato de `ChallengeData`, considerar: **parse defensivo** em `loadData`, versão do schema, ou pedir ao usuário como tratar dados antigos.
+
+---
+
+## Onde colocar código
+
+| Local | Uso |
+|-------|-----|
+| `src/pages/` | Rotas telas (ex.: `Dashboard`, `SetupPage`, `DayDetailPage` com parâmetro `:date`) |
+| `src/components/` | Componentes de feature (ex.: `AnimatedProgressBar`, `CelebrationOverlay`) |
+| `src/components/ui/` | Primitivos shadcn — evitar editar em massa; preferir composição |
+| `src/contexts/` | Providers (ex.: `ChallengeContext`) |
+| `src/hooks/` | Hooks reutilizáveis |
+| `src/lib/` | Utilitários (ex.: `cn` em `utils.ts`) |
+| `src/types/` | Tipos compartilhados do domínio |
+
+Novas **rotas** devem ser registradas em **`src/App.tsx`** dentro de `BrowserRouter` / `Routes`, e o fluxo deve respeitar redirecionamentos existentes (ex.: sem `startDate`, `Dashboard` manda para `/setup`).
+
+---
+
+## Padrões de implementação
+
+- **Dados do desafio:** consumir via **`useChallenge()`** — não duplicar leitura/gravação de `localStorage` fora do contexto sem motivo forte.
+- **Datas:** usar `YYYY-MM-DD` como chave em `dayLogs` e em URLs (`/day/:date`); ao construir `Date` a partir de string, o código existente usa sufixo `T00:00:00` onde necessário para evitar deslocamento de fuso.
+- **Linguagem da UI:** telas atuais misturam **PT-BR** (ex.: labels no `Dashboard`). Novas cópias de interface devem **manter o mesmo idioma e tom** salvo instrução contrária do usuário.
+- **TanStack Query:** `QueryClientProvider` envolve a app em `App.tsx`; use **só se** a feature precisar de cache/fetch — hoje o núcleo é **local-only**.
+
+---
+
+## O que evitar (armadilhas comuns para IAs)
+
+1. Introduzir **API/backend** ou **auth** sem o usuário pedir.
+2. Mudar **`STORAGE_KEY`** ou formato salvo sem **migração** ou alinhamento explícito.
+3. Criar página nova sem **adicionar rota** em `App.tsx`.
+4. Ignorar **`getDayNumber` / intervalo de 90 dias** ao calcular progresso ou estatísticas.
+5. Tratar **`src/components/ui/*`** como código descartável — é base shadcn; customizações grandes ficam em componentes de feature.
+
+---
+
+## Comandos úteis
+
+- Desenvolvimento: `npm run dev` (porta 8080 conforme config).
+- Qualidade (obrigatório antes de declarar pronto — ver rule de validação): `npx tsc --noEmit` (ou script do projeto se existir), `npm run lint`, `npm run build`, e `npm run test` quando a mudança afetar lógica testável.
+
+---
+
+## Resumo para o agente
+
+1. Entender que o produto é **tracker local de 90 dias** com modelo em **`challenge.ts`** e estado em **`ChallengeContext` + localStorage**.
+2. Seguir **estrutura de pastas** e alias **`@/`**; registrar **rotas** em **`App.tsx`**.
+3. Preservar **chave de storage** e **contrato de dados** ou planejar migração.
+4. Manter **UI em português** como nas telas existentes.
+5. Fechar tarefa só após **typecheck + lint + build** (e testes quando aplicável), e **perguntar** quando requisitos forem ambíguos.
