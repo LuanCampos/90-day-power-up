@@ -47,7 +47,7 @@ export default function Dashboard() {
       icon: <Flame className="w-5 h-5" />,
       label: "Calorias Hoje",
       value: caloriesRemaining !== null ? `${caloriesRemaining}` : `${totalCalories}`,
-      sub: caloriesRemaining !== null ? "kcal restantes" : "kcal",
+      sub: caloriesRemaining !== null ? "restantes" : "kcal",
       progress: calProgress,
       variant: "energy" as const,
       path: `/day/${todayStr}?section=calories`,
