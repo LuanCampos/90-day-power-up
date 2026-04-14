@@ -3,15 +3,17 @@ import { useChallenge } from "@/contexts/ChallengeContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, RotateCcw } from "lucide-react";
+import { ArrowLeft, Download, RotateCcw } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "@/components/ui/sonner";
+import { usePwaInstall } from "@/hooks/usePwaInstall";
 
 export default function SettingsPage() {
   const { data, setGoals, resetChallenge } = useChallenge();
   const navigate = useNavigate();
   const [goals, setLocalGoals] = useState(data.goals);
   const [showReset, setShowReset] = useState(false);
+  const { isStandalone, isIos, promptInstall } = usePwaInstall();
 
   const handleSave = () => {
     setGoals(goals);
@@ -67,6 +69,54 @@ export default function SettingsPage() {
         <Button onClick={handleSave} className="w-full h-12 rounded-xl gradient-success text-primary-foreground font-display font-semibold border-0 mt-6">
           Salvar Metas
         </Button>
+
+        {!isStandalone && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: fields.length * 0.05 + 0.05 }}
+            className="p-4 rounded-2xl card-elevated border border-border mt-6"
+          >
+            <div className="flex gap-4 items-start">
+              <img
+                src="/brand/pwa-icon.svg"
+                alt=""
+                width={64}
+                height={64}
+                className="w-16 h-16 rounded-xl shrink-0 object-cover border border-border shadow-sm"
+              />
+              <div className="space-y-3 min-w-0 flex-1">
+                <div>
+                  <h2 className="text-sm font-medium text-foreground">Instalar aplicativo</h2>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Adicione o 90 Day Power Up à tela inicial para abrir como um app.
+                  </p>
+                </div>
+                {isIos ? (
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    No Safari, toque em <span className="text-foreground/90">Compartilhar</span> e depois em{" "}
+                    <span className="text-foreground/90">Adicionar à Tela de Início</span>.
+                  </p>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full sm:w-auto rounded-xl"
+                    onClick={async () => {
+                      const outcome = await promptInstall();
+                      if (outcome === "unavailable") {
+                        toast.info("Use o ícone de instalação na barra de endereços do navegador.");
+                      }
+                    }}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Instalar na tela inicial
+                  </Button>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         <div className="pt-8 border-t border-border mt-8">
           {!showReset ? (
