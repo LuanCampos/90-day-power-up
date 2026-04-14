@@ -233,7 +233,7 @@ export default function DayDetailPage() {
             )}
             <AnimatedProgressBar
               value={dailyCalGoal > 0 ? (totalCalories / dailyCalGoal) * 100 : 0}
-              variant={(dailyCalGoal > 0 && isCalorieGoalMet(log, data.goals) ? "success" : "energy") as const}
+              variant={dailyCalGoal > 0 && isCalorieGoalMet(log, data.goals) ? "success" as const : "energy" as const}
               size="sm"
               showPercentage={false}
               successRange={dailyCalGoal > 0 ? { min: 50, max: 100 } : undefined}
