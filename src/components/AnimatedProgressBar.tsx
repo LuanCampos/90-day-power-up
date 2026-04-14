@@ -1,12 +1,16 @@
 import { motion } from "framer-motion";
 
 interface AnimatedProgressBarProps {
-  value: number; // 0-100
+  value: number; // 0-100 (pode passar >100; largura exibida continua limitada a 100)
   label?: string;
   sublabel?: string;
   variant?: "success" | "energy" | "default";
   size?: "sm" | "md" | "lg";
   showPercentage?: boolean;
+  /** Se definido, o brilho “completo” aplica quando value está em [min, max] (inclusive), usando o valor bruto. */
+  successRange?: { min: number; max: number };
+  /** Quando false, nunca aplica estilo de “completo” (ex.: calorias no dia atual antes de fechar o dia). */
+  completeHighlight?: boolean;
 }
 
 export function AnimatedProgressBar({
@@ -16,9 +20,17 @@ export function AnimatedProgressBar({
   variant = "default",
   size = "md",
   showPercentage = true,
+  successRange,
+  completeHighlight = true,
 }: AnimatedProgressBarProps) {
+  const raw = value;
   const clamped = Math.min(100, Math.max(0, value));
-  const isComplete = clamped >= 100;
+  const isComplete =
+    completeHighlight === false
+      ? false
+      : successRange
+        ? raw >= successRange.min && raw <= successRange.max
+        : clamped >= 100;
 
   const heights = { sm: "h-2", md: "h-3", lg: "h-4" };
   const barColors = {

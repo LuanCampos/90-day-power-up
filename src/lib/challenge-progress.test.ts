@@ -5,6 +5,7 @@ import {
   getWeekCelebrationKey,
   getWeekStats,
   isCalorieGoalMet,
+  isCalorieDayReviewOk,
   isDayFullyComplete,
   isSleepGoalMet,
   isWorkoutPillarMet,
@@ -43,12 +44,35 @@ describe("isCalorieGoalMet", () => {
     expect(isCalorieGoalMet(log, baseGoals)).toBe(false);
   });
 
-  it("met when >= goal with positive intake", () => {
-    const log: DayLog = {
+  it("met when intake between 50% and 100% of ceiling (inclusive)", () => {
+    const log100: DayLog = {
       ...emptyLog("2026-04-13"),
       calories: [{ id: "1", amount: 2000 }],
     };
-    expect(isCalorieGoalMet(log, baseGoals)).toBe(true);
+    expect(isCalorieGoalMet(log100, baseGoals)).toBe(true);
+    const log50: DayLog = {
+      ...emptyLog("2026-04-13"),
+      calories: [{ id: "1", amount: 1000 }],
+    };
+    expect(isCalorieGoalMet(log50, baseGoals)).toBe(true);
+    const log75: DayLog = {
+      ...emptyLog("2026-04-13"),
+      calories: [{ id: "1", amount: 1500 }],
+    };
+    expect(isCalorieGoalMet(log75, baseGoals)).toBe(true);
+  });
+
+  it("not met below 50% or above 100% of ceiling", () => {
+    const low: DayLog = {
+      ...emptyLog("2026-04-13"),
+      calories: [{ id: "1", amount: 999 }],
+    };
+    expect(isCalorieGoalMet(low, baseGoals)).toBe(false);
+    const high: DayLog = {
+      ...emptyLog("2026-04-13"),
+      calories: [{ id: "1", amount: 2001 }],
+    };
+    expect(isCalorieGoalMet(high, baseGoals)).toBe(false);
   });
 
   it("goal <= 0 treats pillar as N/A", () => {
@@ -57,10 +81,55 @@ describe("isCalorieGoalMet", () => {
   });
 });
 
+describe("isCalorieDayReviewOk", () => {
+  it("false for today or future even when intake is in band", () => {
+    const log: DayLog = {
+      ...emptyLog("2026-04-13"),
+      calories: [{ id: "1", amount: 1500 }],
+    };
+    expect(isCalorieDayReviewOk(log, baseGoals, "2026-04-13", "2026-04-13")).toBe(false);
+    expect(isCalorieDayReviewOk(log, baseGoals, "2026-04-14", "2026-04-13")).toBe(false);
+  });
+
+  it("true for a past day when intake is in band", () => {
+    const log: DayLog = {
+      ...emptyLog("2026-04-12"),
+      calories: [{ id: "1", amount: 1500 }],
+    };
+    expect(isCalorieDayReviewOk(log, baseGoals, "2026-04-12", "2026-04-13")).toBe(true);
+  });
+
+  it("false for a past day when outside band", () => {
+    const low: DayLog = {
+      ...emptyLog("2026-04-12"),
+      calories: [{ id: "1", amount: 400 }],
+    };
+    expect(isCalorieDayReviewOk(low, baseGoals, "2026-04-12", "2026-04-13")).toBe(false);
+    const high: DayLog = {
+      ...emptyLog("2026-04-12"),
+      calories: [{ id: "1", amount: 2100 }],
+    };
+    expect(isCalorieDayReviewOk(high, baseGoals, "2026-04-12", "2026-04-13")).toBe(false);
+  });
+});
+
 describe("isSleepGoalMet", () => {
-  it("met when hours >= goal", () => {
-    const log: DayLog = { ...emptyLog("2026-04-13"), sleepHours: 8 };
-    expect(isSleepGoalMet(log, baseGoals)).toBe(true);
+  it("met when logged hours between 80% and 140% of goal (inclusive)", () => {
+    const at80: DayLog = { ...emptyLog("2026-04-13"), sleepHours: 6.4 };
+    expect(isSleepGoalMet(at80, baseGoals)).toBe(true);
+    const at100: DayLog = { ...emptyLog("2026-04-13"), sleepHours: 8 };
+    expect(isSleepGoalMet(at100, baseGoals)).toBe(true);
+    const at140: DayLog = { ...emptyLog("2026-04-13"), sleepHours: 11.2 };
+    expect(isSleepGoalMet(at140, baseGoals)).toBe(true);
+  });
+
+  it("not met below 80% or above 140% or when not logged", () => {
+    const low: DayLog = { ...emptyLog("2026-04-13"), sleepHours: 6.3 };
+    expect(isSleepGoalMet(low, baseGoals)).toBe(false);
+    const high: DayLog = { ...emptyLog("2026-04-13"), sleepHours: 11.3 };
+    expect(isSleepGoalMet(high, baseGoals)).toBe(false);
+    const empty = emptyLog("2026-04-13");
+    expect(isSleepGoalMet(empty, baseGoals)).toBe(false);
   });
 
   it("goal <= 0 is N/A", () => {

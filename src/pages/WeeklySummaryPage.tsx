@@ -8,7 +8,7 @@ import { AnimatedProgressBar } from "@/components/AnimatedProgressBar";
 import {
   areWeeklyGoalsMet,
   getWeekStats,
-  isCalorieGoalMet,
+  isCalorieDayReviewOk,
   isSleepGoalMet,
 } from "@/lib/challenge-progress";
 import { ArrowLeft, Check, X, Flame, Moon, Dumbbell, Heart, ChevronLeft, ChevronRight, Trophy } from "lucide-react";
@@ -22,6 +22,7 @@ export default function WeeklySummaryPage() {
 
   const { weekWorkouts, weekCardios } = getWeekStats(weekStart, getDayLog);
   const weekGoalsMet = areWeeklyGoalsMet(weekWorkouts, weekCardios, data.goals);
+  const todayStr = format(new Date(), "yyyy-MM-dd");
 
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = addDays(weekStart, i);
@@ -29,7 +30,7 @@ export default function WeeklySummaryPage() {
     const log = getDayLog(dateStr);
     const dayNum = getDayNumber(dateStr);
     const totalCal = log.calories.reduce((s, c) => s + c.amount, 0);
-    const calMet = isCalorieGoalMet(log, data.goals);
+    const calMet = isCalorieDayReviewOk(log, data.goals, dateStr, todayStr);
     const sleepMet = isSleepGoalMet(log, data.goals);
     const workoutTemplate = log.workout ? data.workoutTemplates.find(t => t.id === log.workout) : null;
 

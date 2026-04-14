@@ -14,6 +14,7 @@ import {
   getWeekStats,
   hasCelebratedMilestone,
   isCalorieGoalMet,
+  isCalorieDayReviewOk,
   isDayFullyComplete,
   isSleepGoalMet,
   weekMilestoneId,
@@ -83,6 +84,7 @@ export default function DayDetailPage() {
 
   if (!date) return null;
 
+  const todayStr = format(new Date(), "yyyy-MM-dd");
   const currentDate = parseISO(date);
   const prevDate = format(addDays(currentDate, -1), "yyyy-MM-dd");
   const nextDate = format(addDays(currentDate, 1), "yyyy-MM-dd");
@@ -103,23 +105,19 @@ export default function DayDetailPage() {
   const handleAddCalorie = () => {
     const amount = parseInt(calAmount);
     if (isNaN(amount) || amount <= 0) return;
-    const prevTotal = getDailyCaloriesTotal(log);
     addCalorie(date, { amount, label: calLabel || undefined });
     setCalAmount("");
     setCalLabel("");
-    const newTotal = prevTotal + amount;
-    if (
-      data.goals.dailyCalories > 0 &&
-      prevTotal < data.goals.dailyCalories &&
-      newTotal >= data.goals.dailyCalories
-    ) {
-      celebrate("goal", "Meta de calorias atingida!");
-    }
   };
 
   const totalCalories = getDailyCaloriesTotal(log);
   const dailyCalGoal = data.goals.dailyCalories;
+  const calRatio = dailyCalGoal > 0 ? totalCalories / dailyCalGoal : 0;
   const caloriesRemaining = dailyCalGoal > 0 ? Math.max(0, dailyCalGoal - totalCalories) : null;
+  const caloriesClosedDayOk =
+    dailyCalGoal > 0 && date < todayStr && isCalorieDayReviewOk(log, data.goals, date, todayStr);
+  const caloriesTodayInBand =
+    dailyCalGoal > 0 && date === todayStr && isCalorieGoalMet(log, data.goals);
 
   const handleSleep = () => {
     const hours = parseFloat(sleepInput);
@@ -196,15 +194,31 @@ export default function DayDetailPage() {
                 {caloriesRemaining !== null ? "restantes" : "kcal"}
               </span>
             </div>
-            {isCalorieGoalMet(log, data.goals) && dailyCalGoal > 0 && (
-              <p className="text-xs font-medium text-success">Meta atingida</p>
+            {caloriesClosedDayOk && (
+              <p className="text-xs font-medium text-success">No alvo (50–100% da meta)</p>
+            )}
+            {caloriesTodayInBand && (
+              <p className="text-xs text-muted-foreground">Entre 50% e 100% da meta (o dia ainda não fechou).</p>
+            )}
+            {dailyCalGoal > 0 && totalCalories > 0 && calRatio > 1 && (
+              <p className="text-xs font-medium text-destructive">Acima da meta diária</p>
+            )}
+            {dailyCalGoal > 0 && totalCalories > 0 && calRatio < 0.5 && (
+              <p className="text-xs font-medium text-amber-600 dark:text-amber-500">Abaixo de 50% da meta</p>
+            )}
+            {dailyCalGoal > 0 && date === todayStr && totalCalories === 0 && (
+              <p className="text-xs text-muted-foreground">Registre as calorias ao longo do dia.</p>
             )}
             {caloriesRemaining !== null && (
               <p className="text-xs text-muted-foreground">{totalCalories} / {dailyCalGoal} kcal consumidas</p>
             )}
             <AnimatedProgressBar
               value={dailyCalGoal > 0 ? (totalCalories / dailyCalGoal) * 100 : 0}
-              variant="energy" size="sm" showPercentage={false}
+              variant="energy"
+              size="sm"
+              showPercentage={false}
+              successRange={dailyCalGoal > 0 ? { min: 50, max: 100 } : undefined}
+              completeHighlight={date < todayStr}
             />
             <AnimatePresence>
               {log.calories.map((entry) => (
@@ -315,7 +329,14 @@ export default function DayDetailPage() {
               <Button onClick={handleSleep} className="gradient-success text-primary-foreground border-0">Salvar</Button>
             </div>
             {log.sleepHours && data.goals.dailySleepHours > 0 && (
-              <AnimatedProgressBar value={(log.sleepHours / data.goals.dailySleepHours) * 100} label={`${log.sleepHours}h`} sublabel={`/ ${data.goals.dailySleepHours}h`} variant="success" size="sm" />
+              <AnimatedProgressBar
+                value={(log.sleepHours / data.goals.dailySleepHours) * 100}
+                label={`${log.sleepHours}h`}
+                sublabel={`/ ${data.goals.dailySleepHours}h`}
+                variant="success"
+                size="sm"
+                successRange={{ min: 80, max: 140 }}
+              />
             )}
           </motion.div>
         )}

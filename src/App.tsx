@@ -5,6 +5,7 @@ import { reactRouterFutureFlags } from "@/lib/react-router-future";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ChallengeProvider } from "@/contexts/ChallengeContext";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const SetupPage = lazy(() => import("./pages/SetupPage"));
@@ -33,6 +34,7 @@ const App = () => (
       <Sonner />
       <ChallengeProvider>
         <BrowserRouter basename={routerBasename} future={reactRouterFutureFlags}>
+          <ScrollToTop />
           <Suspense fallback={<RouteFallback />}>
             <Routes>
               <Route path="/" element={<Dashboard />} />

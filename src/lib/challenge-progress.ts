@@ -5,17 +5,43 @@ export function getDailyCaloriesTotal(log: DayLog): number {
   return log.calories.reduce((s, c) => s + c.amount, 0);
 }
 
-/** Alinhado ao WeeklySummary: meta batida só com consumo > 0. Meta <= 0 desliga o pilar. */
+/**
+ * Pilar de calorias no dia atual: meta é teto (deficit). OK = consumo entre 50% e 100% da meta, com registro (> 0).
+ * Abaixo de 50% ou acima de 100% não conta como atingido. Meta <= 0 desliga o pilar.
+ */
 export function isCalorieGoalMet(log: DayLog, goals: ChallengeGoals): boolean {
   if (goals.dailyCalories <= 0) return true;
   const total = getDailyCaloriesTotal(log);
-  return total >= goals.dailyCalories && total > 0;
+  if (total <= 0) return false;
+  const ratio = total / goals.dailyCalories;
+  return ratio >= 0.5 && ratio <= 1;
 }
 
-/** Meta <= 0 desliga o pilar. */
+/**
+ * Check no resumo semanal / revisão: só faz sentido “OK” depois que o dia terminou.
+ * Mesma faixa 50–100% da meta como teto; hoje e futuros retornam false.
+ */
+export function isCalorieDayReviewOk(
+  log: DayLog,
+  goals: ChallengeGoals,
+  dayDateStr: string,
+  todayStr: string,
+): boolean {
+  if (goals.dailyCalories <= 0) return true;
+  if (dayDateStr >= todayStr) return false;
+  return isCalorieGoalMet(log, goals);
+}
+
+/**
+ * Sono: precisa estar registrado no app (> 0 h) e entre 80% e 140% da meta (inclusive).
+ * Meta <= 0 desliga o pilar.
+ */
 export function isSleepGoalMet(log: DayLog, goals: ChallengeGoals): boolean {
   if (goals.dailySleepHours <= 0) return true;
-  return (log.sleepHours || 0) >= goals.dailySleepHours;
+  const hours = log.sleepHours;
+  if (hours == null || hours <= 0) return false;
+  const ratio = hours / goals.dailySleepHours;
+  return ratio >= 0.8 && ratio <= 1.4;
 }
 
 export function isCardioDoneForDay(log: DayLog): boolean {

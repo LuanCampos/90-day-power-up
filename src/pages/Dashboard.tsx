@@ -99,8 +99,9 @@ export default function Dashboard() {
       progress: calProgress,
       variant: "energy" as const,
       path: `/day/${todayStr}?section=calories`,
+      completeHighlight: false,
     },
-    {
+       {
       icon: <Moon className="w-5 h-5" />,
       label: "Sono Hoje",
       value: todayLog.sleepHours ? `${todayLog.sleepHours}h` : "—",
@@ -108,6 +109,7 @@ export default function Dashboard() {
       progress: sleepProgress,
       variant: "success" as const,
       path: `/day/${todayStr}?section=sleep`,
+      sleepSuccessRange: data.goals.dailySleepHours > 0 ? { min: 80, max: 140 } : undefined,
     },
     {
       icon: <Dumbbell className="w-5 h-5" />,
@@ -189,7 +191,14 @@ export default function Dashboard() {
               <span className="text-2xl font-display font-bold text-foreground">{card.value}</span>
               <span className="text-xs text-muted-foreground">{card.sub}</span>
             </div>
-            <AnimatedProgressBar value={card.progress} variant={card.variant} size="sm" showPercentage={false} />
+            <AnimatedProgressBar
+              value={card.progress}
+              variant={card.variant}
+              size="sm"
+              showPercentage={false}
+              successRange={"sleepSuccessRange" in card ? card.sleepSuccessRange : undefined}
+              completeHighlight={"completeHighlight" in card ? card.completeHighlight : true}
+            />
           </motion.button>
         ))}
       </div>
