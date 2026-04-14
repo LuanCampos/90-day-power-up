@@ -1,0 +1,142 @@
+import React from "react";
+import { Routes, Route } from "react-router-dom";
+import { screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  clearChallengeStorage,
+  DEFAULT_GOALS,
+  installSequentialUuidMock,
+  readPersistedChallenge,
+  renderWithChallengeRouter,
+  writeRawChallengeJson,
+} from "@/test/challenge-test-utils";
+import DayDetailPage from "@/pages/DayDetailPage";
+
+vi.mock("@/components/CelebrationOverlay", () => ({
+  useCelebration: () => ({
+    celebrate: vi.fn(),
+    overlay: null,
+  }),
+}));
+
+function seedDayDetailFixture() {
+  writeRawChallengeJson({
+    startDate: "2026-04-01",
+    goals: DEFAULT_GOALS,
+    workoutTemplates: [{ id: "tpl-1", name: "Upper", order: 0 }],
+    dayLogs: {},
+    feedback: { celebratedMilestones: [] },
+  });
+}
+
+function renderDayDetail() {
+  return renderWithChallengeRouter(
+    <Routes>
+      <Route path="/day/:date" element={<DayDetailPage />} />
+    </Routes>,
+    { initialEntries: ["/day/2026-04-13"] },
+  );
+}
+
+function getCaloriesCard() {
+  const heading = screen.getByRole("heading", { name: /Calorias/i });
+  const card = heading.closest(".rounded-2xl");
+  if (!card) throw new Error("Calories card not found");
+  return card as HTMLElement;
+}
+
+beforeEach(() => {
+  clearChallengeStorage();
+  installSequentialUuidMock();
+  seedDayDetailFixture();
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe("DayDetailPage", () => {
+  it("adicionar calorias pela UI persiste no localStorage", async () => {
+    const user = userEvent.setup();
+    renderDayDetail();
+    await waitFor(() => expect(readPersistedChallenge().startDate).toBe("2026-04-01"));
+
+    await user.type(screen.getByPlaceholderText("kcal"), "500");
+    await user.type(screen.getByPlaceholderText(/Descrição/i), "Lanche");
+    const calCard = getCaloriesCard();
+    const buttons = within(calCard).getAllByRole("button");
+    await user.click(buttons[buttons.length - 1]);
+
+    await waitFor(() => {
+      expect(readPersistedChallenge().dayLogs["2026-04-13"].calories).toEqual([
+        { id: "test-uuid-0", amount: 500, label: "Lanche" },
+      ]);
+    });
+  });
+
+  it("remover caloria pela UI persiste no localStorage", async () => {
+    const user = userEvent.setup();
+    writeRawChallengeJson({
+      startDate: "2026-04-01",
+      goals: DEFAULT_GOALS,
+      workoutTemplates: [],
+      dayLogs: {
+        "2026-04-13": {
+          date: "2026-04-13",
+          calories: [{ id: "keep-me", amount: 100 }],
+          cardio: { done: false },
+        },
+      },
+      feedback: { celebratedMilestones: [] },
+    });
+    renderDayDetail();
+    await waitFor(() => screen.getByText("100 kcal"));
+
+    const calCard = getCaloriesCard();
+    await user.click(within(calCard).getAllByRole("button")[0]);
+
+    await waitFor(() => {
+      expect(readPersistedChallenge().dayLogs["2026-04-13"].calories).toEqual([]);
+    });
+  });
+
+  it("salvar sono pela UI persiste no localStorage", async () => {
+    const user = userEvent.setup();
+    renderDayDetail();
+    await waitFor(() => expect(readPersistedChallenge().startDate).toBe("2026-04-01"));
+
+    await user.type(screen.getByPlaceholderText(/Horas de sono/i), "7.5");
+    await user.click(screen.getByRole("button", { name: /^Salvar$/i }));
+
+    await waitFor(() => {
+      expect(readPersistedChallenge().dayLogs["2026-04-13"].sleepHours).toBe(7.5);
+    });
+  });
+
+  it("marcar cardio como feito persiste no localStorage", async () => {
+    const user = userEvent.setup();
+    renderDayDetail();
+    await waitFor(() => expect(readPersistedChallenge().startDate).toBe("2026-04-01"));
+
+    await user.click(screen.getByRole("button", { name: /Feito hoje/i }));
+
+    await waitFor(() => {
+      expect(readPersistedChallenge().dayLogs["2026-04-13"].cardio).toMatchObject({
+        done: true,
+      });
+    });
+  });
+
+  it("selecionar treino pela UI persiste workout id no localStorage", async () => {
+    const user = userEvent.setup();
+    renderDayDetail();
+    await waitFor(() => screen.getByRole("button", { name: /Upper/i }));
+
+    await user.click(screen.getByRole("button", { name: /Upper/i }));
+
+    await waitFor(() => {
+      expect(readPersistedChallenge().dayLogs["2026-04-13"].workout).toBe("tpl-1");
+    });
+  });
+});

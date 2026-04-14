@@ -21,7 +21,7 @@ Esta rule complementa **`validacao-e-clareza.mdc`**: antes de concluir trabalho,
 | Datas | **date-fns**; na UI as strings de dia são **`YYYY-MM-DD`** (alinhado a `format(..., "yyyy-MM-dd")` e tipos em `src/types/challenge.ts`) |
 | Formulários / validação | **react-hook-form**, **zod**, `@hookform/resolvers` (usar quando houver formulário novo, seguindo padrão existente nas páginas) |
 | Outras libs visuais | **framer-motion**, **lucide-react**, **recharts** (gráficos), toasts (**Sonner** + toaster shadcn) |
-| Testes | **Vitest** — `npm run test` |
+| Testes | **Vitest** — `npm run test`; ver **`validacao-e-clareza.mdc`** (diretrizes de testes fortes, persistência, um `it` por operação quando CRUD) |
 
 **Alias de import:** sempre `@/` → `src/` (ex.: `@/components/ui/button`, `@/contexts/ChallengeContext`).
 

@@ -18,6 +18,16 @@ Se o repositório passar a expor scripts dedicados (por exemplo `typecheck` ou `
 
 ---
 
+# Diretrizes de testes (qualidade)
+
+- **Testes devem ser fortes:** exercitar comportamento real (regras de negócio, mutações de estado, efeitos colaterais relevantes). **Não** adicionar testes “de enfeite” (`expect(true)`, só renderizar sem asserção útil, ou mocks que tornam o teste vazio).
+- **Persistência neste projeto:** quando a feature usa `ChallengeContext` / `localStorage`, preferir asserções que provem **dados gravados** (ex.: ler a chave `fitness-challenge-90` após `waitFor`), não só que uma função foi chamada.
+- **CRUD e operações:** para cada mutação exposta (ou fluxo de UI equivalente), preferir **`it` dedicado** com nome claro — evita um único teste gigante que esconde regressões.
+- **Camadas:** combinar o que fizer sentido — testes de **pure functions** em `src/lib/`; **provider** com `renderHook` + storage; **páginas** com RTL + ações do usuário quando o risco é wiring UI ↔ estado.
+- **Novos testes fracos:** se o pedido do usuário for só “aumentar cobertura” sem critério, **alinhar** o que deve ser garantido (cenários, bordas) em vez de inventar asserções vazias.
+
+---
+
 # Sem suposições: esclarecer com o usuário
 
 - **Não inferir** requisitos ambíguos (comportamento esperado, escopo, prioridades, nomes de APIs, UX, dados de exemplo, etc.) quando isso mudaria o resultado de forma relevante.

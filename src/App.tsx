@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { reactRouterFutureFlags } from "@/lib/react-router-future";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ChallengeProvider } from "@/contexts/ChallengeContext";
@@ -21,7 +22,7 @@ const App = () => (
     <TooltipProvider>
       <Sonner />
       <ChallengeProvider>
-        <BrowserRouter basename={routerBasename}>
+        <BrowserRouter basename={routerBasename} future={reactRouterFutureFlags}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/setup" element={<SetupPage />} />
