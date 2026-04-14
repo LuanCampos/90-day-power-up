@@ -18,9 +18,12 @@ import {
   isCalorieGoalMet,
   isCalorieDayReviewOk,
   isDayFullyComplete,
+  isDashboardSleepOnTrack,
   isSleepGoalMet,
 } from "@/lib/challenge-progress";
-import { ArrowLeft, Plus, X, Flame, Dumbbell, Heart, Moon, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { SubpageHeader } from "@/components/SubpageHeader";
+import { cn } from "@/lib/utils";
+import { Plus, X, Flame, Dumbbell, Heart, Moon, Check, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function DayDetailPage() {
   const { date } = useParams<{ date: string }>();
@@ -126,11 +129,12 @@ export default function DayDetailPage() {
 
   const totalCalories = getDailyCaloriesTotal(log);
   const dailyCalGoal = data.goals.dailyCalories;
-  const caloriesRemaining = dailyCalGoal > 0 ? Math.max(0, dailyCalGoal - totalCalories) : null;
+  const caloriesOverBudget = dailyCalGoal > 0 && totalCalories > dailyCalGoal;
+  const caloriesHeadlineNumber =
+    dailyCalGoal <= 0 ? totalCalories : caloriesOverBudget ? totalCalories - dailyCalGoal : Math.max(0, dailyCalGoal - totalCalories);
+  const caloriesHeadlineSuffix = dailyCalGoal <= 0 ? "kcal" : caloriesOverBudget ? "excedentes" : "restantes";
   const caloriesClosedDayOk =
     dailyCalGoal > 0 && date < todayStr && isCalorieDayReviewOk(log, data.goals, date, todayStr);
-  const caloriesTodayInBand =
-    dailyCalGoal > 0 && date === todayStr && isCalorieGoalMet(log, data.goals);
 
   const handleSleep = () => {
     const hours = parseFloat(sleepInput);
@@ -158,15 +162,13 @@ export default function DayDetailPage() {
   return (
     <div className="min-h-screen bg-background pb-24">
       {overlay}
-      <div className="px-5 pt-8 pb-4">
-        <button onClick={() => navigate("/")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4">
-          <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm">Voltar</span>
-        </button>
+      <SubpageHeader title="Registrar Dia" onBack={() => navigate("/")} />
 
-        <div className={`flex items-center ${focusSection ? "justify-center" : "justify-between"}`}>
+      <div className="px-5 pb-4">
+        <div className={cn("mt-3", !focusSection && "flex items-center justify-between")}>
           {!focusSection && (
             <button
+              type="button"
               onClick={() => canGoPrev && navigate(`/day/${prevDate}`)}
               disabled={!canGoPrev}
               className="p-2 rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
@@ -174,16 +176,15 @@ export default function DayDetailPage() {
               <ChevronLeft className="w-5 h-5" />
             </button>
           )}
-          <div className="text-center">
-            <h1 className="text-2xl font-display font-bold text-foreground">
-              {dayNum ? `Dia ${dayNum}` : date}
-            </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {format(currentDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
-            </p>
-          </div>
+          <p className="text-sm text-muted-foreground text-center px-1">
+            <span className="font-medium text-foreground">{dayNum != null ? `Dia ${dayNum}` : date}</span>
+            <span className="mt-0.5 block text-xs">
+              {format(currentDate, "d MMM", { locale: ptBR })}
+            </span>
+          </p>
           {!focusSection && (
             <button
+              type="button"
               onClick={() => canGoNext && navigate(`/day/${nextDate}`)}
               disabled={!canGoNext}
               className="p-2 rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
@@ -198,23 +199,20 @@ export default function DayDetailPage() {
         {(showAll || focusSection === "calories") && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-5 rounded-2xl card-elevated border border-border space-y-4">
             <div className="flex items-center gap-2">
-              <Flame className="w-5 h-5 text-energy" />
+              <Flame className="w-5 h-5 text-pillar-calories" />
               <h2 className="font-display font-semibold text-foreground">Calorias</h2>
-              <span className="ml-auto text-2xl font-display font-bold text-foreground tabular-nums">
-                {caloriesRemaining !== null ? caloriesRemaining : totalCalories}
+              <span
+                className={`ml-auto text-2xl font-display font-bold tabular-nums ${caloriesOverBudget ? "text-energy" : "text-foreground"}`}
+              >
+                {caloriesHeadlineNumber}
               </span>
-              <span className="text-sm text-muted-foreground">
-                {caloriesRemaining !== null ? "restantes" : "kcal"}
-              </span>
+              <span className="text-sm text-muted-foreground">{caloriesHeadlineSuffix}</span>
             </div>
             {caloriesClosedDayOk && (
               <p className="text-xs font-medium text-success">No alvo (50–100% da meta)</p>
             )}
-            {caloriesTodayInBand && (
-              <p className="text-xs text-muted-foreground">Entre 50% e 100% da meta (o dia ainda não fechou).</p>
-            )}
             {dailyCalGoal > 0 && totalCalories > dailyCalGoal && (
-              <p className="text-xs font-medium text-destructive">Acima da meta diária</p>
+              <p className="text-xs font-medium text-energy">Acima da meta diária</p>
             )}
             {dailyCalGoal > 0 && totalCalories > 0 && totalCalories < 0.5 * dailyCalGoal && (
               <p className="text-xs font-medium text-amber-600 dark:text-amber-500">Abaixo de 50% da meta</p>
@@ -222,17 +220,18 @@ export default function DayDetailPage() {
             {dailyCalGoal > 0 && date === todayStr && totalCalories === 0 && (
               <p className="text-xs text-muted-foreground">Registre as calorias ao longo do dia.</p>
             )}
-            {caloriesRemaining !== null && (
+            {dailyCalGoal > 0 && (
               <p className="text-xs text-muted-foreground">{totalCalories} / {dailyCalGoal} kcal consumidas</p>
             )}
             <AnimatedProgressBar
               value={dailyCalGoal > 0 ? (totalCalories / dailyCalGoal) * 100 : 0}
-              variant="energy"
+              variant={(dailyCalGoal > 0 && isCalorieGoalMet(log, data.goals) ? "success" : "energy") as const}
               size="sm"
               showPercentage={false}
               successRange={dailyCalGoal > 0 ? { min: 50, max: 100 } : undefined}
               completeHighlight={date < todayStr}
               warnAbove={dailyCalGoal > 0 ? 100 : undefined}
+              warnOverStyle="energy"
             />
             <AnimatePresence>
               {log.calories.map((entry) => (
@@ -251,7 +250,7 @@ export default function DayDetailPage() {
             <div className="flex gap-2">
               <Input placeholder="kcal" type="number" value={calAmount} onChange={(e) => setCalAmount(e.target.value)} className="w-24 bg-secondary border-border" />
               <Input placeholder="Descrição (opcional)" value={calLabel} onChange={(e) => setCalLabel(e.target.value)} className="flex-1 bg-secondary border-border" />
-              <Button onClick={handleAddCalorie} size="icon" className="gradient-energy text-primary-foreground border-0 shrink-0">
+              <Button onClick={handleAddCalorie} size="icon" variant="secondary" className="shrink-0 border border-border text-foreground hover:bg-muted">
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
@@ -261,7 +260,7 @@ export default function DayDetailPage() {
         {(showAll || focusSection === "workout") && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="p-5 rounded-2xl card-elevated border border-border space-y-3">
             <div className="flex items-center gap-2 mb-1">
-              <Dumbbell className="w-5 h-5 text-success" />
+              <Dumbbell className="w-5 h-5 text-pillar-workout" />
               <h2 className="font-display font-semibold text-foreground">Treino</h2>
               {log.workout && data.workoutTemplates.length > 0 && (
                 <span className="ml-auto text-xs font-medium text-success">Feito hoje</span>
@@ -308,12 +307,12 @@ export default function DayDetailPage() {
         {(showAll || focusSection === "cardio") && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="p-5 rounded-2xl card-elevated border border-border space-y-3">
             <div className="flex items-center gap-2 mb-1">
-              <Heart className="w-5 h-5 text-fire" />
+              <Heart className="w-5 h-5 text-pillar-cardio" />
               <h2 className="font-display font-semibold text-foreground">Cardio</h2>
             </div>
             <Button onClick={() => handleCardio(!log.cardio.done)}
               variant={log.cardio.done ? "default" : "outline"}
-              className={log.cardio.done ? "gradient-energy text-primary-foreground border-0" : "border-border"}>
+              className={log.cardio.done ? "gradient-pillar-cardio text-white border-0 hover:opacity-95" : "border-border"}>
               {log.cardio.done ? "✓ Feito" : "Feito hoje"}
             </Button>
             {log.cardio.done && (
@@ -332,7 +331,7 @@ export default function DayDetailPage() {
         {(showAll || focusSection === "sleep") && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="p-5 rounded-2xl card-elevated border border-border space-y-3">
             <div className="flex items-center gap-2 mb-1">
-              <Moon className="w-5 h-5 text-primary" />
+              <Moon className="w-5 h-5 text-pillar-sleep" />
               <h2 className="font-display font-semibold text-foreground">Sono</h2>
               {isSleepGoalMet(log, data.goals) && data.goals.dailySleepHours > 0 && (
                 <span className="ml-auto text-xs font-medium text-success">Sono no alvo</span>
@@ -347,9 +346,10 @@ export default function DayDetailPage() {
                 value={(log.sleepHours / data.goals.dailySleepHours) * 100}
                 label={`${log.sleepHours}h`}
                 sublabel={`/ ${data.goals.dailySleepHours}h`}
-                variant="success"
+                variant={isDashboardSleepOnTrack(log, data.goals) ? "success" : "energy"}
                 size="sm"
                 successRange={{ min: 80, max: 140 }}
+                warnAbove={140}
               />
             )}
           </motion.div>

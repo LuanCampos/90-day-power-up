@@ -56,6 +56,78 @@ export function isWorkoutPillarMet(log: DayLog, workoutTemplateCount: number): b
   return Boolean(log.workout);
 }
 
+/** Ícone na lista “Dia a Dia” do resumo: check, X ou vazio (pendente / N/A). */
+export type WeekDayPillarIcon = "good" | "bad" | "none";
+
+function sleepHoursProvided(log: DayLog): boolean {
+  const h = log.sleepHours;
+  return h != null && h > 0;
+}
+
+export function weekSummaryPillarCaloriesIcon(
+  log: DayLog,
+  goals: ChallengeGoals,
+  dayDateStr: string,
+  todayStr: string,
+): WeekDayPillarIcon {
+  const ceiling = Number(goals.dailyCalories);
+  if (!Number.isFinite(ceiling) || ceiling <= 0) return "none";
+  if (dayDateStr >= todayStr) return "none";
+  return isCalorieGoalMet(log, goals) ? "good" : "bad";
+}
+
+export function weekSummaryPillarSleepIcon(
+  log: DayLog,
+  goals: ChallengeGoals,
+  dayDateStr: string,
+  todayStr: string,
+): WeekDayPillarIcon {
+  if (goals.dailySleepHours <= 0) return "none";
+  if (dayDateStr > todayStr) return "none";
+  if (dayDateStr === todayStr) {
+    if (!sleepHoursProvided(log)) return "none";
+    return isSleepGoalMet(log, goals) ? "good" : "bad";
+  }
+  return isSleepGoalMet(log, goals) ? "good" : "bad";
+}
+
+export function weekSummaryPillarWorkoutIcon(
+  log: DayLog,
+  workoutTemplateCount: number,
+  dayDateStr: string,
+  todayStr: string,
+): WeekDayPillarIcon {
+  if (workoutTemplateCount <= 0) return "none";
+  if (dayDateStr > todayStr) return "none";
+  if (dayDateStr === todayStr) {
+    return log.workout ? "good" : "none";
+  }
+  return log.workout ? "good" : "bad";
+}
+
+export function weekSummaryPillarCardioIcon(log: DayLog, dayDateStr: string, todayStr: string): WeekDayPillarIcon {
+  if (dayDateStr > todayStr) return "none";
+  if (dayDateStr === todayStr) {
+    return log.cardio.done ? "good" : "none";
+  }
+  return log.cardio.done ? "good" : "bad";
+}
+
+export function getWeekDayPillarIcons(
+  log: DayLog,
+  goals: ChallengeGoals,
+  workoutTemplateCount: number,
+  dayDateStr: string,
+  todayStr: string,
+): Record<"calories" | "sleep" | "workout" | "cardio", WeekDayPillarIcon> {
+  return {
+    calories: weekSummaryPillarCaloriesIcon(log, goals, dayDateStr, todayStr),
+    sleep: weekSummaryPillarSleepIcon(log, goals, dayDateStr, todayStr),
+    workout: weekSummaryPillarWorkoutIcon(log, workoutTemplateCount, dayDateStr, todayStr),
+    cardio: weekSummaryPillarCardioIcon(log, dayDateStr, todayStr),
+  };
+}
+
 export function isDayFullyComplete(
   log: DayLog,
   goals: ChallengeGoals,

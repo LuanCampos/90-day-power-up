@@ -6,6 +6,7 @@ import {
   defaultChallengeViewBlockFirstDay,
   getChallengeBlockStats,
   getDailyCaloriesTotal,
+  getWeekDayPillarIcons,
   getWeekStats,
   isCalorieGoalMet,
   isCalorieDayReviewOk,
@@ -144,6 +145,97 @@ describe("isCalorieDayReviewOk", () => {
       calories: [{ id: "1", amount: 3000 }],
     };
     expect(isCalorieDayReviewOk(log, { ...baseGoals, dailyCalories: 0 }, "2026-04-12", "2026-04-13")).toBe(false);
+  });
+});
+
+describe("getWeekDayPillarIcons (Dia a Dia)", () => {
+  const todayStr = "2026-04-13";
+
+  it("futuro: nenhum check nem X", () => {
+    const log = emptyLog("2026-04-14");
+    expect(getWeekDayPillarIcons(log, baseGoals, 2, "2026-04-14", todayStr)).toEqual({
+      calories: "none",
+      sleep: "none",
+      workout: "none",
+      cardio: "none",
+    });
+  });
+
+  it("hoje: calorias sem ícone; sono sem registro sem ícone; treino e cardio pendentes sem ícone", () => {
+    const log = emptyLog(todayStr);
+    expect(getWeekDayPillarIcons(log, baseGoals, 2, todayStr, todayStr)).toEqual({
+      calories: "none",
+      sleep: "none",
+      workout: "none",
+      cardio: "none",
+    });
+  });
+
+  it("hoje: calorias na faixa ainda sem ícone (revisão só após fechar o dia)", () => {
+    const log: DayLog = {
+      ...emptyLog(todayStr),
+      calories: [{ id: "1", amount: 1500 }],
+    };
+    expect(getWeekDayPillarIcons(log, baseGoals, 2, todayStr, todayStr).calories).toBe("none");
+  });
+
+  it("hoje: sono registrado fora da faixa => bad", () => {
+    const log: DayLog = { ...emptyLog(todayStr), sleepHours: 4 };
+    expect(getWeekDayPillarIcons(log, baseGoals, 2, todayStr, todayStr).sleep).toBe("bad");
+  });
+
+  it("hoje: sono no alvo => good", () => {
+    const log: DayLog = { ...emptyLog(todayStr), sleepHours: 8 };
+    expect(getWeekDayPillarIcons(log, baseGoals, 2, todayStr, todayStr).sleep).toBe("good");
+  });
+
+  it("hoje: treino e cardio marcados => good", () => {
+    const log: DayLog = {
+      ...emptyLog(todayStr),
+      workout: "w1",
+      cardio: { done: true },
+    };
+    const icons = getWeekDayPillarIcons(log, baseGoals, 2, todayStr, todayStr);
+    expect(icons.workout).toBe("good");
+    expect(icons.cardio).toBe("good");
+  });
+
+  it("passado: pilares não atendidos => bad", () => {
+    const log = emptyLog("2026-04-12");
+    expect(getWeekDayPillarIcons(log, baseGoals, 2, "2026-04-12", todayStr)).toEqual({
+      calories: "bad",
+      sleep: "bad",
+      workout: "bad",
+      cardio: "bad",
+    });
+  });
+
+  it("passado: pilares atendidos => good", () => {
+    const log: DayLog = {
+      ...emptyLog("2026-04-12"),
+      calories: [{ id: "1", amount: 1500 }],
+      sleepHours: 8,
+      workout: "w1",
+      cardio: { done: true },
+    };
+    expect(getWeekDayPillarIcons(log, baseGoals, 2, "2026-04-12", todayStr)).toEqual({
+      calories: "good",
+      sleep: "good",
+      workout: "good",
+      cardio: "good",
+    });
+  });
+
+  it("meta calorias 0 => coluna calorias sempre none", () => {
+    const goals = { ...baseGoals, dailyCalories: 0 };
+    const past = { ...emptyLog("2026-04-12"), calories: [{ id: "1", amount: 9000 }] };
+    expect(getWeekDayPillarIcons(past, goals, 2, "2026-04-12", todayStr).calories).toBe("none");
+    expect(getWeekDayPillarIcons(emptyLog(todayStr), goals, 2, todayStr, todayStr).calories).toBe("none");
+  });
+
+  it("sem templates => workout sempre none", () => {
+    const log: DayLog = { ...emptyLog("2026-04-12"), workout: "w1" };
+    expect(getWeekDayPillarIcons(log, baseGoals, 0, "2026-04-12", todayStr).workout).toBe("none");
   });
 });
 

@@ -4,7 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Plus, Trash2, Dumbbell } from "lucide-react";
+import { SubpageHeader } from "@/components/SubpageHeader";
+import { Plus, Trash2, Dumbbell } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
 export default function WorkoutsPage() {
@@ -21,14 +22,7 @@ export default function WorkoutsPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <div className="px-5 pt-8 pb-4">
-        <button onClick={() => navigate("/")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4">
-          <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm">Voltar</span>
-        </button>
-        <h1 className="text-2xl font-display font-bold text-foreground">Meus Treinos</h1>
-        <p className="text-sm text-muted-foreground mt-1">Defina os treinos da sua rotina semanal</p>
-      </div>
+      <SubpageHeader title="Meus Treinos" onBack={() => navigate("/")} />
 
       <div className="px-5 space-y-3">
         <AnimatePresence>
@@ -42,7 +36,7 @@ export default function WorkoutsPage() {
               className="flex items-center gap-3 p-4 rounded-2xl card-elevated border border-border group"
             >
               <div className="p-2 rounded-xl bg-secondary text-muted-foreground">
-                <Dumbbell className="w-4 h-4" />
+                <Dumbbell className="w-4 h-4 text-pillar-workout" />
               </div>
               <div className="flex-1">
                 <Input
@@ -71,7 +65,7 @@ export default function WorkoutsPage() {
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
             className="flex-1 bg-secondary border-border"
           />
-          <Button onClick={handleAdd} className="gradient-success text-primary-foreground border-0">
+          <Button onClick={handleAdd} className="gradient-pillar-workout text-white border-0 hover:opacity-95">
             <Plus className="w-4 h-4 mr-1" />
             Adicionar
           </Button>

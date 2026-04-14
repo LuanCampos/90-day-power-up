@@ -40,10 +40,26 @@
     --energy: 25 100% 58%;
     --fire: 12 90% 55%;
 
+    /* Ícones de categoria (evitar verde/laranja — reservados a check / alertas) */
+    /* Calories: carmim (Apple Health active energy) | Sleep: índigo (céu noturno) */
+    /* Workout: azul forte (concentração/performance) | Cardio: rosa (coração) */
+    --pillar-calories: 354 82% 58%;
+    --pillar-sleep: 248 65% 60%;
+    --pillar-workout: 217 78% 58%;
+    --pillar-cardio: 330 74% 58%;
+
     --gradient-success: linear-gradient(135deg, hsl(145 72% 50%), hsl(160 70% 45%));
     --gradient-energy: linear-gradient(135deg, hsl(32 95% 55%), hsl(12 90% 55%));
     --gradient-card: linear-gradient(135deg, hsl(220 18% 11%), hsl(220 18% 13%));
     --gradient-progress: linear-gradient(90deg, hsl(145 72% 50%), hsl(160 70% 45%), hsl(170 65% 50%));
+    /* Ações rápidas (não são pilares de dado — tons suaves, leitura “agenda” vs “panorama”) */
+    /* Dia: ciano — associação comum com calendário/agenda e “foco no hoje” (clareza, sem calor emocional de alerta) */
+    --action-day: 199 55% 58%;
+    /* Semana: violeta suave — síntese / visão agregada (dashboards costumam usar roxo para insights, sem competir com cardio rosa) */
+    --action-weekly: 265 42% 62%;
+
+    --gradient-pillar-workout: linear-gradient(90deg, hsl(217 78% 48%), hsl(210 80% 60%));
+    --gradient-pillar-cardio: linear-gradient(90deg, hsl(330 74% 52%), hsl(335 68% 64%));
 
     --shadow-glow-success: 0 0 20px hsl(145 72% 50% / 0.3);
     --shadow-glow-energy: 0 0 20px hsl(32 95% 55% / 0.3);
@@ -101,6 +117,14 @@
 
   .gradient-progress {
     background: var(--gradient-progress);
+  }
+
+  .gradient-pillar-workout {
+    background: var(--gradient-pillar-workout);
+  }
+
+  .gradient-pillar-cardio {
+    background: var(--gradient-pillar-cardio);
   }
 
   .card-elevated {

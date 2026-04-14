@@ -11,10 +11,12 @@ import {
   defaultChallengeViewBlockFirstDay,
   getChallengeBlockStats,
   getDailyCaloriesTotal,
-  isCalorieDayReviewOk,
-  isSleepGoalMet,
+  getWeekDayPillarIcons,
+  type WeekDayPillarIcon,
 } from "@/lib/challenge-progress";
-import { ArrowLeft, Check, X, Flame, Moon, Dumbbell, Heart, ChevronLeft, ChevronRight, Trophy } from "lucide-react";
+import { SubpageHeader } from "@/components/SubpageHeader";
+import { cn } from "@/lib/utils";
+import { Check, X, Flame, Moon, Dumbbell, Heart, ChevronLeft, ChevronRight, Trophy } from "lucide-react";
 
 export default function WeeklySummaryPage() {
   const { data, getDayLog, getDayNumber } = useChallenge();
@@ -36,14 +38,10 @@ export default function WeeklySummaryPage() {
     const log = getDayLog(dateStr);
     const dayNum = getDayNumber(dateStr);
     const totalCal = getDailyCaloriesTotal(log);
-    const calMet = isCalorieDayReviewOk(log, data.goals, dateStr, todayStr);
-    const sleepMet = isSleepGoalMet(log, data.goals);
     const workoutTemplate = log.workout ? data.workoutTemplates.find(t => t.id === log.workout) : null;
+    const pillarIcons = getWeekDayPillarIcons(log, data.goals, data.workoutTemplates.length, dateStr, todayStr);
 
-    const calOverCeiling =
-      data.goals.dailyCalories > 0 && totalCal > data.goals.dailyCalories;
-
-    return { d, dateStr, dayNum, log, totalCal, calMet, calOverCeiling, sleepMet, workoutTemplate };
+    return { d, dateStr, dayNum, log, totalCal, workoutTemplate, pillarIcons };
   });
 
   const prevBlockFirst = blockFirstDay - 7;
@@ -51,9 +49,15 @@ export default function WeeklySummaryPage() {
   const hasPrevWeek = prevBlockFirst >= 1;
   const hasNextWeek = nextBlockFirst <= 85;
 
-  const StatusIcon = ({ met }: { met: boolean }) => met
-    ? <Check className="w-4 h-4 text-success" />
-    : <X className="w-4 h-4 text-muted-foreground/40" />;
+  const PillarIcon = ({ state }: { state: WeekDayPillarIcon }) => {
+    if (state === "good") {
+      return <Check className="w-4 h-4 shrink-0 text-success" aria-hidden />;
+    }
+    if (state === "bad") {
+      return <X className="w-4 h-4 shrink-0 text-energy" aria-hidden />;
+    }
+    return <span className="inline-block h-4 w-4 shrink-0" aria-hidden />;
+  };
 
   if (!data.startDate) {
     return <Navigate to="/setup" replace />;
@@ -61,14 +65,10 @@ export default function WeeklySummaryPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <div className="px-5 pt-8 pb-4">
-        <button onClick={() => navigate("/")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4">
-          <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm">Voltar</span>
-        </button>
-        <h1 className="text-2xl font-display font-bold text-foreground">Resumo da Semana</h1>
+      <SubpageHeader title="Resumo da Semana" onBack={() => navigate("/")} />
 
-        <div className="flex items-center justify-between mt-3">
+      <div className="px-5 pb-4">
+        <div className="mt-3 flex items-center justify-between">
           <button
             type="button"
             onClick={() => hasPrevWeek && setViewBlockFirstDay(prevBlockFirst)}
@@ -99,9 +99,9 @@ export default function WeeklySummaryPage() {
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-start gap-3 rounded-2xl border border-success/40 bg-success/10 p-4"
+            className="flex items-start gap-3 rounded-2xl border border-accent/40 bg-accent/10 p-4"
           >
-            <div className="rounded-xl bg-success/20 p-2 text-success">
+            <div className="rounded-xl bg-accent/20 p-2 text-accent">
               <Trophy className="w-5 h-5" />
             </div>
             <div>
@@ -117,25 +117,25 @@ export default function WeeklySummaryPage() {
       <div className="px-5 grid grid-cols-2 gap-3 mb-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-2xl card-elevated border border-border space-y-2">
           <div className="flex items-center gap-2 text-muted-foreground">
-            <Dumbbell className="w-4 h-4" />
+            <Dumbbell className="w-4 h-4 text-pillar-workout" />
             <span className="text-xs">Treinos</span>
           </div>
           <AnimatedProgressBar
             value={data.goals.weeklyWorkouts > 0 ? (weekWorkouts / data.goals.weeklyWorkouts) * 100 : 0}
             label={`${weekWorkouts}/${data.goals.weeklyWorkouts}`}
-            variant="success"
+            variant="pillar-workout"
             size="sm"
           />
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="p-4 rounded-2xl card-elevated border border-border space-y-2">
           <div className="flex items-center gap-2 text-muted-foreground">
-            <Heart className="w-4 h-4" />
+            <Heart className="w-4 h-4 text-pillar-cardio" />
             <span className="text-xs">Cardios</span>
           </div>
           <AnimatedProgressBar
             value={data.goals.weeklyCardios > 0 ? (weekCardios / data.goals.weeklyCardios) * 100 : 0}
             label={`${weekCardios}/${data.goals.weeklyCardios}`}
-            variant="energy"
+            variant="pillar-cardio"
             size="sm"
           />
         </motion.div>
@@ -153,46 +153,45 @@ export default function WeeklySummaryPage() {
             className="w-full p-4 rounded-2xl card-elevated border border-border text-left hover:border-primary/30 transition-colors"
           >
             <div className="flex items-center justify-between mb-2">
-              <div>
-                <span className="text-sm font-medium text-foreground capitalize">
-                  {format(day.d, "EEEE", { locale: ptBR })}
+              <div className="flex items-baseline gap-2 flex-wrap">
+                {day.dayNum != null ? (
+                  <span className="text-base font-display font-bold text-foreground tabular-nums">
+                    Dia {day.dayNum}
+                  </span>
+                ) : null}
+                <span
+                  className={cn(
+                    day.dayNum != null ? "text-xs text-muted-foreground" : "text-sm font-medium text-foreground",
+                  )}
+                >
+                  {format(day.d, "d MMM", { locale: ptBR })}
                 </span>
-                {day.dayNum && (
-                  <span className="ml-2 text-xs text-muted-foreground">Dia {day.dayNum}</span>
-                )}
               </div>
-              <span className="text-xs text-muted-foreground">{format(day.d, "dd/MM")}</span>
             </div>
             <div className="flex items-center gap-4 text-xs">
               <div className="flex items-center gap-1">
-                <Flame className="w-3.5 h-3.5 text-energy" />
-                <span
-                  className={
-                    day.calMet ? "text-success" : day.calOverCeiling ? "text-destructive" : "text-muted-foreground"
-                  }
-                >
-                  {day.totalCal} kcal
-                </span>
-                <StatusIcon met={day.calMet} />
+                <Flame className="w-3.5 h-3.5 shrink-0 text-pillar-calories" />
+                <span className="text-muted-foreground">{day.totalCal} kcal</span>
+                <PillarIcon state={day.pillarIcons.calories} />
               </div>
               <div className="flex items-center gap-1">
-                <Moon className="w-3.5 h-3.5 text-primary" />
-                <span className={day.sleepMet ? "text-success" : "text-muted-foreground"}>
+                <Moon className="w-3.5 h-3.5 shrink-0 text-pillar-sleep" />
+                <span className="text-muted-foreground">
                   {day.log.sleepHours ? `${day.log.sleepHours}h` : "—"}
                 </span>
-                <StatusIcon met={day.sleepMet} />
+                <PillarIcon state={day.pillarIcons.sleep} />
               </div>
               <div className="flex items-center gap-1">
-                <Dumbbell className="w-3.5 h-3.5 text-success" />
-                <span className={day.workoutTemplate ? "text-success" : "text-muted-foreground"}>
+                <Dumbbell className="w-3.5 h-3.5 shrink-0 text-pillar-workout" />
+                <span className="min-w-0 truncate text-muted-foreground">
                   {day.workoutTemplate ? day.workoutTemplate.name : "—"}
                 </span>
+                <PillarIcon state={day.pillarIcons.workout} />
               </div>
               <div className="flex items-center gap-1">
-                <Heart className="w-3.5 h-3.5 text-fire" />
-                <span className={day.log.cardio.done ? "text-success" : "text-muted-foreground"}>
-                  {day.log.cardio.done ? "\u2713" : "—"}
-                </span>
+                <Heart className="w-3.5 h-3.5 shrink-0 text-pillar-cardio" />
+                <span className="text-muted-foreground">{day.log.cardio.done ? "Feito" : "—"}</span>
+                <PillarIcon state={day.pillarIcons.cardio} />
               </div>
             </div>
           </motion.button>

@@ -34,7 +34,7 @@ export function CelebrationOverlay({ type, message, show, durationMs, onDismiss 
 
   const icons = {
     goal: <CheckCircle2 className="w-16 h-16 text-success" />,
-    day: <Flame className="w-16 h-16 text-energy" />,
+    day: <Flame className="w-16 h-16 text-pillar-calories" />,
     week: <Trophy className="w-16 h-16 text-accent" />,
     challenge: <Sparkles className="w-16 h-16 text-accent" />,
   };

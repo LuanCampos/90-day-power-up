@@ -4,7 +4,7 @@ interface AnimatedProgressBarProps {
   value: number; // 0-100 (pode passar >100; largura exibida continua limitada a 100)
   label?: string;
   sublabel?: string;
-  variant?: "success" | "energy" | "default";
+  variant?: "success" | "energy" | "default" | "pillar-workout" | "pillar-cardio";
   size?: "sm" | "md" | "lg";
   showPercentage?: boolean;
   /** Se definido, o brilho “completo” aplica quando value está em [min, max] (inclusive), usando o valor bruto. */
@@ -13,6 +13,8 @@ interface AnimatedProgressBarProps {
   completeHighlight?: boolean;
   /** Valor bruto acima do qual a barra vira alerta e nunca é “completa” (ex.: 100 = % acima da meta de calorias). */
   warnAbove?: number;
+  /** Estilo da barra quando passa de `warnAbove`: vermelho (padrão, ex. sono) ou laranja (ex. calorias). */
+  warnOverStyle?: "destructive" | "energy";
 }
 
 export function AnimatedProgressBar({
@@ -25,10 +27,13 @@ export function AnimatedProgressBar({
   successRange,
   completeHighlight = true,
   warnAbove,
+  warnOverStyle = "destructive",
 }: AnimatedProgressBarProps) {
   const raw = value;
   const clamped = Math.min(100, Math.max(0, value));
   const isOverBudget = warnAbove != null && raw > warnAbove;
+  const overBudgetClass =
+    isOverBudget && warnOverStyle === "energy" ? "gradient-energy" : isOverBudget ? "bg-destructive" : null;
   const isComplete =
     isOverBudget
       ? false
@@ -43,6 +48,8 @@ export function AnimatedProgressBar({
     default: "gradient-progress",
     success: "gradient-success",
     energy: "gradient-energy",
+    "pillar-workout": "gradient-pillar-workout",
+    "pillar-cardio": "gradient-pillar-cardio",
   };
 
   return (
@@ -62,7 +69,7 @@ export function AnimatedProgressBar({
       )}
       <div className={`w-full ${heights[size]} rounded-full bg-secondary overflow-hidden`}>
         <motion.div
-          className={`h-full rounded-full ${isOverBudget ? "bg-destructive" : barColors[variant]} ${isComplete ? "glow-success" : ""}`}
+          className={`h-full rounded-full ${overBudgetClass ?? barColors[variant]} ${isComplete ? "glow-success" : ""}`}
           initial={{ width: 0 }}
           animate={{ width: `${clamped}%` }}
           transition={{ duration: 0.8, ease: "easeOut" }}

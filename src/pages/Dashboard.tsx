@@ -91,7 +91,7 @@ export default function Dashboard() {
 
   const totalCalories = getDailyCaloriesTotal(todayLog);
   const dailyCalGoal = data.goals.dailyCalories;
-  const caloriesRemaining = dailyCalGoal > 0 ? Math.max(0, dailyCalGoal - totalCalories) : null;
+  const caloriesOverBudget = dailyCalGoal > 0 && totalCalories > dailyCalGoal;
   const calProgress = dailyCalGoal > 0 ? (totalCalories / dailyCalGoal) * 100 : 0;
   const sleepProgress =
     todayLog.sleepHours && data.goals.dailySleepHours > 0
@@ -115,18 +115,25 @@ export default function Dashboard() {
 
   const statCards = [
     {
-      icon: <Flame className="w-5 h-5" />,
+      icon: <Flame className="w-5 h-5 text-pillar-calories" />,
       label: "Calorias Hoje",
-      value: caloriesRemaining !== null ? `${caloriesRemaining}` : `${totalCalories}`,
-      sub: caloriesRemaining !== null ? "restantes" : "kcal",
+      value:
+        dailyCalGoal <= 0
+          ? `${totalCalories}`
+          : caloriesOverBudget
+            ? `${totalCalories - dailyCalGoal}`
+            : `${Math.max(0, dailyCalGoal - totalCalories)}`,
+      sub: dailyCalGoal <= 0 ? "kcal" : caloriesOverBudget ? "excedentes" : "restantes",
+      valueEnergy: caloriesOverBudget,
       progress: calProgress,
       variant: (caloriesOnTrack ? "success" : "energy") as const,
       path: `/day/${todayStr}?section=calories`,
       completeHighlight: false,
       warnAbove: dailyCalGoal > 0 ? 100 : undefined,
+      calWarnOrange: true,
     },
     {
-      icon: <Moon className="w-5 h-5" />,
+      icon: <Moon className="w-5 h-5 text-pillar-sleep" />,
       label: "Sono Hoje",
       value: todayLog.sleepHours ? `${todayLog.sleepHours}h` : "—",
       sub: `/ ${data.goals.dailySleepHours}h`,
@@ -134,9 +141,10 @@ export default function Dashboard() {
       variant: (sleepOnTrack ? "success" : "energy") as const,
       path: `/day/${todayStr}?section=sleep`,
       sleepSuccessRange: data.goals.dailySleepHours > 0 ? { min: 80, max: 140 } : undefined,
+      sleepWarnAbove: data.goals.dailySleepHours > 0 ? 140 : undefined,
     },
     {
-      icon: <Dumbbell className="w-5 h-5" />,
+      icon: <Dumbbell className="w-5 h-5 text-pillar-workout" />,
       label: "Treinos (semana)",
       value: `${weekWorkouts}`,
       sub: `/ ${data.goals.weeklyWorkouts}`,
@@ -145,7 +153,7 @@ export default function Dashboard() {
       path: `/day/${todayStr}?section=workout`,
     },
     {
-      icon: <Heart className="w-5 h-5" />,
+      icon: <Heart className="w-5 h-5 text-pillar-cardio" />,
       label: "Cardios (semana)",
       value: `${weekCardios}`,
       sub: `/ ${data.goals.weeklyCardios}`,
@@ -165,7 +173,7 @@ export default function Dashboard() {
               Dia {currentDayNum || "—"}<span className="text-muted-foreground font-normal text-lg"> / 90</span>
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {format(today, "EEEE, d 'de' MMMM", { locale: ptBR })}
+              {format(today, "d MMM", { locale: ptBR })}
             </p>
             {todayComplete && (
               <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-success/40 bg-success/10 px-3 py-1 text-xs font-medium text-success">
@@ -212,7 +220,11 @@ export default function Dashboard() {
               <span className="text-xs font-medium">{card.label}</span>
             </div>
             <div className="flex items-baseline gap-1 mb-3">
-              <span className="text-2xl font-display font-bold text-foreground">{card.value}</span>
+              <span
+                className={`text-2xl font-display font-bold ${"valueEnergy" in card && card.valueEnergy ? "text-energy" : "text-foreground"}`}
+              >
+                {card.value}
+              </span>
               <span className="text-xs text-muted-foreground">{card.sub}</span>
             </div>
             <AnimatedProgressBar
@@ -222,7 +234,10 @@ export default function Dashboard() {
               showPercentage={false}
               successRange={"sleepSuccessRange" in card ? card.sleepSuccessRange : undefined}
               completeHighlight={"completeHighlight" in card ? card.completeHighlight : true}
-              warnAbove={"warnAbove" in card ? card.warnAbove : undefined}
+              warnAbove={
+                "warnAbove" in card ? card.warnAbove : "sleepWarnAbove" in card ? card.sleepWarnAbove : undefined
+              }
+              warnOverStyle={"calWarnOrange" in card && card.calWarnOrange ? "energy" : "destructive"}
             />
           </motion.button>
         ))}
@@ -232,9 +247,9 @@ export default function Dashboard() {
         <h2 className="text-sm font-display font-semibold text-muted-foreground uppercase tracking-wider">Ações Rápidas</h2>
 
         {[
-          { label: "Registrar Dia", sub: "Calorias, treino, cardio, sono", icon: <Calendar className="w-5 h-5" />, path: `/day/${todayStr}` },
-          { label: "Resumo da Semana", sub: "Veja seu progresso semanal", icon: <Zap className="w-5 h-5" />, path: "/weekly" },
-          { label: "Meus Treinos", sub: "Gerenciar templates de treino", icon: <Dumbbell className="w-5 h-5" />, path: "/workouts" },
+          { label: "Registrar Dia", sub: "Calorias, treino, cardio, sono", icon: <Calendar className="w-5 h-5 text-action-day" />, path: `/day/${todayStr}` },
+          { label: "Resumo da Semana", sub: "Veja seu progresso semanal", icon: <Zap className="w-5 h-5 text-action-weekly" />, path: "/weekly" },
+          { label: "Meus Treinos", sub: "Gerenciar templates de treino", icon: <Dumbbell className="w-5 h-5 text-pillar-workout" />, path: "/workouts" },
         ].map((action, i) => (
           <motion.button
             key={action.path}
@@ -244,7 +259,7 @@ export default function Dashboard() {
             onClick={() => navigate(action.path)}
             className="w-full flex items-center gap-4 p-4 rounded-2xl card-elevated border border-border hover:border-primary/30 transition-colors group"
           >
-            <div className="p-2.5 rounded-xl bg-secondary text-muted-foreground group-hover:text-primary transition-colors">
+            <div className="p-2.5 rounded-xl bg-secondary group-hover:bg-muted/50 transition-colors">
               {action.icon}
             </div>
             <div className="flex-1 text-left">

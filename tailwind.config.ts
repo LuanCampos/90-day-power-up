@@ -56,6 +56,16 @@ export default {
         warning: "hsl(var(--warning))",
         energy: "hsl(var(--energy))",
         fire: "hsl(var(--fire))",
+        pillar: {
+          calories: "hsl(var(--pillar-calories))",
+          sleep: "hsl(var(--pillar-sleep))",
+          workout: "hsl(var(--pillar-workout))",
+          cardio: "hsl(var(--pillar-cardio))",
+        },
+        action: {
+          day: "hsl(var(--action-day))",
+          weekly: "hsl(var(--action-weekly))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

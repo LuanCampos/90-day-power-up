@@ -3,7 +3,8 @@ import { useChallenge } from "@/contexts/ChallengeContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Download, RotateCcw } from "lucide-react";
+import { SubpageHeader } from "@/components/SubpageHeader";
+import { Download, RotateCcw } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "@/components/ui/sonner";
 import { usePwaInstall } from "@/hooks/usePwaInstall";
@@ -35,14 +36,7 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <div className="px-5 pt-8 pb-4">
-        <button onClick={() => navigate("/")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4">
-          <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm">Voltar</span>
-        </button>
-        <h1 className="text-2xl font-display font-bold text-foreground">Configurações</h1>
-        <p className="text-sm text-muted-foreground mt-1">Ajuste suas metas do desafio</p>
-      </div>
+      <SubpageHeader title="Configurações" onBack={() => navigate("/")} />
 
       <div className="px-5 space-y-4">
         {fields.map((field, i) => (
