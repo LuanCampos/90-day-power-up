@@ -79,7 +79,7 @@ export default function SettingsPage() {
           >
             <div className="flex gap-4 items-start">
               <img
-                src="/brand/pwa-icon.svg"
+                src={`${import.meta.env.BASE_URL}brand/pwa-icon.svg`}
                 alt=""
                 width={64}
                 height={64}
