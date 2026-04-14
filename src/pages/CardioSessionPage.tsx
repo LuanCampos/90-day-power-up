@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useCelebration } from "@/components/CelebrationOverlay";
 import { SubpageHeader } from "@/components/SubpageHeader";
-import { Heart, Check } from "lucide-react";
+import { Check } from "lucide-react";
 
 function extractYoutubeEmbedUrl(url: string): string | null {
   try {
@@ -67,25 +67,23 @@ export default function CardioSessionPage() {
       <SubpageHeader title={template.name} onBack={() => navigate(`/day/${dateParam}`)} />
 
       <div className="px-5 flex-1 flex flex-col items-center">
-        {/* Title */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-6"
-        >
-          <div className="inline-flex items-center gap-2 text-pillar-cardio mb-2">
-            <Heart className="w-5 h-5" />
-            <span className="text-xs font-medium uppercase tracking-wider">Cardio</span>
-          </div>
-          {template.objective && (
-            <p className="text-sm text-muted-foreground mt-1">{template.objective}</p>
-          )}
-          {template.intensity && (
-            <span className="inline-block mt-2 text-[11px] px-2 py-0.5 rounded-full bg-pillar-cardio/10 text-pillar-cardio font-medium">
-              {template.intensity}
-            </span>
-          )}
-        </motion.div>
+        {/* Objective & intensity */}
+        {(template.objective || template.intensity) && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-6"
+          >
+            {template.objective && (
+              <p className="text-sm text-muted-foreground">{template.objective}</p>
+            )}
+            {template.intensity && (
+              <span className="inline-block mt-2 text-[11px] px-2 py-0.5 rounded-full bg-pillar-cardio/10 text-pillar-cardio font-medium">
+                {template.intensity}
+              </span>
+            )}
+          </motion.div>
+        )}
 
         {/* YouTube embed */}
         {embedUrl && (
