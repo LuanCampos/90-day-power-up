@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useChallenge } from "@/contexts/ChallengeContext";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { format, addDays, parseISO, startOfWeek } from "date-fns";
+import { format, addDays, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -10,14 +10,15 @@ import { AnimatedProgressBar } from "@/components/AnimatedProgressBar";
 import { useCelebration } from "@/components/CelebrationOverlay";
 import {
   areWeeklyGoalsMet,
+  challengeBlockDayRange,
+  challengeWeekMilestoneId,
+  getChallengeBlockStats,
   getDailyCaloriesTotal,
-  getWeekStats,
   hasCelebratedMilestone,
   isCalorieGoalMet,
   isCalorieDayReviewOk,
   isDayFullyComplete,
   isSleepGoalMet,
-  weekMilestoneId,
 } from "@/lib/challenge-progress";
 import { ArrowLeft, Plus, X, Flame, Dumbbell, Heart, Moon, Check, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -60,12 +61,21 @@ export default function DayDetailPage() {
 
   useEffect(() => {
     if (!date || !data.startDate) return;
-    const detailWeekStart = startOfWeek(parseISO(date), { weekStartsOn: 1 });
-    const todayWeek = startOfWeek(new Date(), { weekStartsOn: 1 });
-    if (todayWeek.getTime() !== detailWeekStart.getTime()) return;
-    const { weekWorkouts, weekCardios } = getWeekStats(detailWeekStart, getDayLog);
+    const todayStrEff = format(new Date(), "yyyy-MM-dd");
+    const detailDayNum = getDayNumber(date);
+    const todayNumEff = getDayNumber(todayStrEff);
+    if (detailDayNum == null || todayNumEff == null) return;
+    const detailBlock = challengeBlockDayRange(detailDayNum);
+    const todayBlock = challengeBlockDayRange(todayNumEff);
+    if (detailBlock.firstDay !== todayBlock.firstDay) return;
+    const { weekWorkouts, weekCardios } = getChallengeBlockStats(
+      data.startDate,
+      detailBlock.firstDay,
+      detailBlock.lastDay,
+      getDayLog,
+    );
     if (!areWeeklyGoalsMet(weekWorkouts, weekCardios, data.goals)) return;
-    const id = weekMilestoneId(detailWeekStart);
+    const id = challengeWeekMilestoneId(detailBlock.firstDay, detailBlock.lastDay);
     if (lastWeekFireRef.current === id) return;
     if (hasCelebratedMilestone(data.feedback?.celebratedMilestones, id)) return;
     lastWeekFireRef.current = id;
@@ -78,6 +88,7 @@ export default function DayDetailPage() {
     data.goals,
     data.feedback?.celebratedMilestones,
     getDayLog,
+    getDayNumber,
     addCelebratedMilestone,
     celebrate,
   ]);
@@ -93,13 +104,16 @@ export default function DayDetailPage() {
   const canGoPrev = prevDayNum !== null;
   const canGoNext = nextDayNum !== null;
 
-  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekWorkoutIds = new Set<string>();
-  for (let i = 0; i < 7; i++) {
-    const d = format(addDays(weekStart, i), "yyyy-MM-dd");
-    if (d === date) continue;
-    const dayLog = getDayLog(d);
-    if (dayLog.workout) weekWorkoutIds.add(dayLog.workout);
+  if (dayNum != null && data.startDate) {
+    const { firstDay, lastDay } = challengeBlockDayRange(dayNum);
+    const base = new Date(data.startDate + "T00:00:00");
+    for (let dNum = firstDay; dNum <= lastDay; dNum++) {
+      const d = format(addDays(base, dNum - 1), "yyyy-MM-dd");
+      if (d === date) continue;
+      const dayLog = getDayLog(d);
+      if (dayLog.workout) weekWorkoutIds.add(dayLog.workout);
+    }
   }
 
   const handleAddCalorie = () => {

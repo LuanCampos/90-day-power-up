@@ -1,4 +1,4 @@
-import { addDays, format, getISOWeek, getISOWeekYear } from "date-fns";
+import { addDays, format } from "date-fns";
 import type { ChallengeGoals, DayLog } from "@/types/challenge";
 
 export function getDailyCaloriesTotal(log: DayLog): number {
@@ -85,6 +85,47 @@ export function getWeekStats(
   return { weekWorkouts, weekCardios, dateStrings };
 }
 
+/** Blocos de 7 dias do desafio: dias 1–7, 8–14, …; o último é 85–90 (6 dias). */
+export function challengeBlockDayRange(challengeDayNum: number): { firstDay: number; lastDay: number } {
+  const firstDay = Math.floor((challengeDayNum - 1) / 7) * 7 + 1;
+  const lastDay = Math.min(firstDay + 6, 90);
+  return { firstDay, lastDay };
+}
+
+export function getChallengeBlockStats(
+  challengeStartDate: string,
+  firstDay: number,
+  lastDay: number,
+  getDayLog: (date: string) => DayLog,
+): { weekWorkouts: number; weekCardios: number; dateStrings: string[] } {
+  const base = new Date(challengeStartDate + "T00:00:00");
+  const dateStrings: string[] = [];
+  let weekWorkouts = 0;
+  let weekCardios = 0;
+  for (let d = firstDay; d <= lastDay; d++) {
+    const dateStr = format(addDays(base, d - 1), "yyyy-MM-dd");
+    dateStrings.push(dateStr);
+    const log = getDayLog(dateStr);
+    if (log.workout) weekWorkouts++;
+    if (log.cardio.done) weekCardios++;
+  }
+  return { weekWorkouts, weekCardios, dateStrings };
+}
+
+/** Primeiro dia do bloco (1, 8, 15, …) ao abrir o resumo: hoje no desafio, ou bloco 1 antes, ou último bloco depois do dia 90. */
+export function defaultChallengeViewBlockFirstDay(
+  startDate: string | null,
+  todayStr: string,
+  getDayNumber: (d: string) => number | null,
+): number {
+  const n = getDayNumber(todayStr);
+  if (n != null) return challengeBlockDayRange(n).firstDay;
+  if (!startDate) return 1;
+  const end = format(addDays(new Date(startDate + "T00:00:00"), 89), "yyyy-MM-dd");
+  if (todayStr > end) return challengeBlockDayRange(90).firstDay;
+  return 1;
+}
+
 /** Metas semanais <= 0 ignoram esse eixo. */
 export function areWeeklyGoalsMet(
   weekWorkouts: number,
@@ -96,12 +137,8 @@ export function areWeeklyGoalsMet(
   return workoutsOk && cardiosOk;
 }
 
-export function getWeekCelebrationKey(weekStartMonday: Date): string {
-  return `${getISOWeekYear(weekStartMonday)}-W${String(getISOWeek(weekStartMonday)).padStart(2, "0")}`;
-}
-
-export function weekMilestoneId(weekStartMonday: Date): string {
-  return `week-${getWeekCelebrationKey(weekStartMonday)}`;
+export function challengeWeekMilestoneId(firstDay: number, lastDay: number): string {
+  return `week-challenge-${firstDay}-${lastDay}`;
 }
 
 export const CHALLENGE_COMPLETE_MILESTONE_ID = "challenge-90-complete";

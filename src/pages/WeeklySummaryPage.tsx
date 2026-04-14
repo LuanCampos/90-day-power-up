@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { useChallenge } from "@/contexts/ChallengeContext";
-import { useNavigate } from "react-router-dom";
-import { format, addDays, startOfWeek, subWeeks, addWeeks } from "date-fns";
+import { useNavigate, Navigate } from "react-router-dom";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion } from "framer-motion";
 import { AnimatedProgressBar } from "@/components/AnimatedProgressBar";
 import {
   areWeeklyGoalsMet,
-  getWeekStats,
+  challengeBlockDayRange,
+  defaultChallengeViewBlockFirstDay,
+  getChallengeBlockStats,
   isCalorieDayReviewOk,
   isSleepGoalMet,
 } from "@/lib/challenge-progress";
@@ -17,16 +19,19 @@ export default function WeeklySummaryPage() {
   const { data, getDayLog, getDayNumber } = useChallenge();
   const navigate = useNavigate();
 
-  const [referenceDate, setReferenceDate] = useState(new Date());
-  const weekStart = startOfWeek(referenceDate, { weekStartsOn: 1 });
-
-  const { weekWorkouts, weekCardios } = getWeekStats(weekStart, getDayLog);
-  const weekGoalsMet = areWeeklyGoalsMet(weekWorkouts, weekCardios, data.goals);
   const todayStr = format(new Date(), "yyyy-MM-dd");
+  const defaultBlockFirst = defaultChallengeViewBlockFirstDay(data.startDate, todayStr, getDayNumber);
+  const [viewBlockFirstDay, setViewBlockFirstDay] = useState<number | null>(null);
+  const blockFirstDay = viewBlockFirstDay ?? defaultBlockFirst;
+  const { firstDay: blockFirst, lastDay: blockLast } = challengeBlockDayRange(blockFirstDay);
 
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = addDays(weekStart, i);
-    const dateStr = format(d, "yyyy-MM-dd");
+  const { weekWorkouts, weekCardios, dateStrings } = data.startDate
+    ? getChallengeBlockStats(data.startDate, blockFirst, blockLast, getDayLog)
+    : { weekWorkouts: 0, weekCardios: 0, dateStrings: [] as string[] };
+  const weekGoalsMet = areWeeklyGoalsMet(weekWorkouts, weekCardios, data.goals);
+
+  const days = dateStrings.map((dateStr) => {
+    const d = new Date(dateStr + "T00:00:00");
     const log = getDayLog(dateStr);
     const dayNum = getDayNumber(dateStr);
     const totalCal = log.calories.reduce((s, c) => s + c.amount, 0);
@@ -37,14 +42,18 @@ export default function WeeklySummaryPage() {
     return { d, dateStr, dayNum, log, totalCal, calMet, sleepMet, workoutTemplate };
   });
 
-  const prevWeekStart = subWeeks(weekStart, 1);
-  const nextWeekStart = addWeeks(weekStart, 1);
-  const hasPrevWeek = data.startDate && Array.from({ length: 7 }, (_, i) => getDayNumber(format(addDays(prevWeekStart, i), "yyyy-MM-dd"))).some(n => n !== null);
-  const hasNextWeek = data.startDate && Array.from({ length: 7 }, (_, i) => getDayNumber(format(addDays(nextWeekStart, i), "yyyy-MM-dd"))).some(n => n !== null);
+  const prevBlockFirst = blockFirstDay - 7;
+  const nextBlockFirst = blockFirstDay + 7;
+  const hasPrevWeek = prevBlockFirst >= 1;
+  const hasNextWeek = nextBlockFirst <= 85;
 
   const StatusIcon = ({ met }: { met: boolean }) => met
     ? <Check className="w-4 h-4 text-success" />
     : <X className="w-4 h-4 text-muted-foreground/40" />;
+
+  if (!data.startDate) {
+    return <Navigate to="/setup" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -57,17 +66,22 @@ export default function WeeklySummaryPage() {
 
         <div className="flex items-center justify-between mt-3">
           <button
-            onClick={() => hasPrevWeek && setReferenceDate(addDays(prevWeekStart, 3))}
+            type="button"
+            onClick={() => hasPrevWeek && setViewBlockFirstDay(prevBlockFirst)}
             disabled={!hasPrevWeek}
             className="p-2 rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <p className="text-sm text-muted-foreground">
-            {format(weekStart, "d MMM", { locale: ptBR })} — {format(addDays(weekStart, 6), "d MMM", { locale: ptBR })}
+          <p className="text-sm text-muted-foreground text-center px-1">
+            <span className="font-medium text-foreground">Dias {blockFirst}–{blockLast}</span>
+            <span className="block text-xs mt-0.5">
+              {format(days[0]?.d ?? new Date(), "d MMM", { locale: ptBR })} — {format(days[days.length - 1]?.d ?? new Date(), "d MMM", { locale: ptBR })}
+            </span>
           </p>
           <button
-            onClick={() => hasNextWeek && setReferenceDate(addDays(nextWeekStart, 3))}
+            type="button"
+            onClick={() => hasNextWeek && setViewBlockFirstDay(nextBlockFirst)}
             disabled={!hasNextWeek}
             className="p-2 rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
           >

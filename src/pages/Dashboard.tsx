@@ -1,17 +1,18 @@
 import { useEffect, useRef } from "react";
 import { useChallenge } from "@/contexts/ChallengeContext";
-import { format, startOfWeek } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion } from "framer-motion";
 import { AnimatedProgressBar } from "@/components/AnimatedProgressBar";
 import { useCelebration } from "@/components/CelebrationOverlay";
 import {
   areWeeklyGoalsMet,
+  challengeBlockDayRange,
+  challengeWeekMilestoneId,
   CHALLENGE_COMPLETE_MILESTONE_ID,
-  getWeekStats,
+  getChallengeBlockStats,
   hasCelebratedMilestone,
   isDayFullyComplete,
-  weekMilestoneId,
 } from "@/lib/challenge-progress";
 import { Settings, Dumbbell, ChevronRight, Moon, Flame, Heart, Zap, Calendar, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,10 +29,12 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!data.startDate) return;
-    const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-    const { weekWorkouts: ww, weekCardios: wc } = getWeekStats(weekStart, getDayLog);
+    const todayNum = getDayNumber(todayStr);
+    if (todayNum == null) return;
+    const { firstDay, lastDay } = challengeBlockDayRange(todayNum);
+    const { weekWorkouts: ww, weekCardios: wc } = getChallengeBlockStats(data.startDate, firstDay, lastDay, getDayLog);
     if (!areWeeklyGoalsMet(ww, wc, data.goals)) return;
-    const id = weekMilestoneId(weekStart);
+    const id = challengeWeekMilestoneId(firstDay, lastDay);
     if (lastWeekFireRef.current === id) return;
     if (hasCelebratedMilestone(data.feedback?.celebratedMilestones, id)) return;
     lastWeekFireRef.current = id;
@@ -43,6 +46,8 @@ export default function Dashboard() {
     data.goals,
     data.feedback?.celebratedMilestones,
     getDayLog,
+    getDayNumber,
+    todayStr,
     addCelebratedMilestone,
     celebrate,
   ]);
@@ -73,8 +78,11 @@ export default function Dashboard() {
   const overallProgress = currentDayNum ? (currentDayNum / 90) * 100 : 0;
   const todayLog = getDayLog(todayStr);
 
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-  const { weekWorkouts, weekCardios } = getWeekStats(weekStart, getDayLog);
+  const blockRange = currentDayNum != null ? challengeBlockDayRange(currentDayNum) : null;
+  const { weekWorkouts, weekCardios } =
+    blockRange != null
+      ? getChallengeBlockStats(data.startDate, blockRange.firstDay, blockRange.lastDay, getDayLog)
+      : { weekWorkouts: 0, weekCardios: 0 };
 
   const totalCalories = todayLog.calories.reduce((s, c) => s + c.amount, 0);
   const dailyCalGoal = data.goals.dailyCalories;

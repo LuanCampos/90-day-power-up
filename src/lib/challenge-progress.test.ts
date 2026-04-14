@@ -1,15 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
   areWeeklyGoalsMet,
+  challengeBlockDayRange,
+  challengeWeekMilestoneId,
+  defaultChallengeViewBlockFirstDay,
+  getChallengeBlockStats,
   getDailyCaloriesTotal,
-  getWeekCelebrationKey,
   getWeekStats,
   isCalorieGoalMet,
   isCalorieDayReviewOk,
   isDayFullyComplete,
   isSleepGoalMet,
   isWorkoutPillarMet,
-  weekMilestoneId,
 } from "@/lib/challenge-progress";
 import type { ChallengeGoals, DayLog } from "@/types/challenge";
 
@@ -201,10 +203,40 @@ describe("areWeeklyGoalsMet", () => {
   });
 });
 
-describe("week keys", () => {
-  it("stable milestone id for a Monday", () => {
-    const monday = new Date("2026-04-13T12:00:00");
-    expect(getWeekCelebrationKey(monday)).toMatch(/^\d{4}-W\d{2}$/);
-    expect(weekMilestoneId(monday)).toBe(`week-${getWeekCelebrationKey(monday)}`);
+describe("challenge week block", () => {
+  it("groups days 1–7, 8–14, … and ends with 85–90", () => {
+    expect(challengeBlockDayRange(1)).toEqual({ firstDay: 1, lastDay: 7 });
+    expect(challengeBlockDayRange(7)).toEqual({ firstDay: 1, lastDay: 7 });
+    expect(challengeBlockDayRange(8)).toEqual({ firstDay: 8, lastDay: 14 });
+    expect(challengeBlockDayRange(90)).toEqual({ firstDay: 85, lastDay: 90 });
+  });
+
+  it("milestone id is stable per block", () => {
+    expect(challengeWeekMilestoneId(1, 7)).toBe("week-challenge-1-7");
+    expect(challengeWeekMilestoneId(85, 90)).toBe("week-challenge-85-90");
+  });
+
+  it("getChallengeBlockStats uses challenge dates", () => {
+    const start = "2026-04-01";
+    const stats = getChallengeBlockStats(start, 1, 7, (d) =>
+      d === "2026-04-02" ? { ...emptyLog(d), workout: "a", cardio: { done: true } } : emptyLog(d),
+    );
+    expect(stats.weekWorkouts).toBe(1);
+    expect(stats.weekCardios).toBe(1);
+    expect(stats.dateStrings[0]).toBe("2026-04-01");
+    expect(stats.dateStrings).toHaveLength(7);
+  });
+
+  it("defaultChallengeViewBlockFirstDay picks block from today or edges", () => {
+    const gd = (d: string) => {
+      if (d < "2026-04-01" || d > "2026-06-29") return null;
+      const start = new Date("2026-04-01T00:00:00");
+      const cur = new Date(d + "T00:00:00");
+      const diff = Math.floor((cur.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      return diff >= 0 && diff < 90 ? diff + 1 : null;
+    };
+    expect(defaultChallengeViewBlockFirstDay("2026-04-01", "2026-04-10", gd)).toBe(8);
+    expect(defaultChallengeViewBlockFirstDay("2026-04-01", "2026-03-01", gd)).toBe(1);
+    expect(defaultChallengeViewBlockFirstDay("2026-04-01", "2026-07-15", gd)).toBe(85);
   });
 });

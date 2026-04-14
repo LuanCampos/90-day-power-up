@@ -282,10 +282,10 @@ describe("ChallengeProvider persistence", () => {
     const { result } = renderHook(() => useChallenge(), { wrapper });
     await waitFor(() => expect(localStorage.getItem(CHALLENGE_STORAGE_KEY)).not.toBeNull());
     act(() => {
-      result.current.addCelebratedMilestone("week-2026-W15");
+      result.current.addCelebratedMilestone("week-challenge-1-7");
     });
     await waitFor(() => {
-      expect(readPersistedChallenge().feedback?.celebratedMilestones).toEqual(["week-2026-W15"]);
+      expect(readPersistedChallenge().feedback?.celebratedMilestones).toEqual(["week-challenge-1-7"]);
     });
   });
 
