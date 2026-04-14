@@ -13,7 +13,7 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const [goals, setLocalGoals] = useState(data.goals);
   const [showReset, setShowReset] = useState(false);
-  const { isStandalone, isIos, promptInstall } = usePwaInstall();
+  const { isStandalone, canPrompt, isIos, promptInstall } = usePwaInstall();
 
   const handleSave = () => {
     setGoals(goals);
