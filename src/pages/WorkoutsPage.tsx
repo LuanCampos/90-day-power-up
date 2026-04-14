@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useChallenge } from "@/contexts/ChallengeContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,10 @@ export default function WorkoutsPage() {
   const navigate = useNavigate();
   const [newName, setNewName] = useState("");
 
+  if (!data.startDate) {
+    return <Navigate to="/setup" replace />;
+  }
+
   const handleAdd = () => {
     if (!newName.trim()) return;
     addWorkoutTemplate({ name: newName.trim(), order: data.workoutTemplates.length });
@@ -24,7 +28,7 @@ export default function WorkoutsPage() {
     <div className="min-h-screen bg-background pb-24">
       <SubpageHeader title="Meus Treinos" onBack={() => navigate("/")} />
 
-      <div className="px-5 space-y-3">
+      <div className="px-5 space-y-5">
         <AnimatePresence>
           {data.workoutTemplates.map((t, i) => (
             <motion.div
@@ -65,7 +69,7 @@ export default function WorkoutsPage() {
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
             className="flex-1 bg-secondary border-border"
           />
-          <Button onClick={handleAdd} className="gradient-pillar-workout text-white border-0 hover:opacity-95">
+          <Button variant="cta" onClick={handleAdd} className="hover:opacity-95">
             <Plus className="w-4 h-4 mr-1" />
             Adicionar
           </Button>

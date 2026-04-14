@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components -- hook + helpers live with overlay for cohesion */
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Flame, Sparkles, Trophy } from "lucide-react";
+import { CalendarCheck2, CheckCircle2, Sparkles, Trophy } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -34,9 +34,9 @@ export function CelebrationOverlay({ type, message, show, durationMs, onDismiss 
 
   const icons = {
     goal: <CheckCircle2 className="w-16 h-16 text-success" />,
-    day: <Flame className="w-16 h-16 text-pillar-calories" />,
-    week: <Trophy className="w-16 h-16 text-accent" />,
-    challenge: <Sparkles className="w-16 h-16 text-accent" />,
+    day: <CalendarCheck2 className="w-16 h-16 text-success" />,
+    week: <Trophy className="w-16 h-16 text-success" />,
+    challenge: <Sparkles className="w-16 h-16 text-success" />,
   };
 
   return (
@@ -65,7 +65,12 @@ export function CelebrationOverlay({ type, message, show, durationMs, onDismiss 
               {icons[type]}
             </motion.div>
             <p className="text-center font-display text-xl font-bold text-foreground">{message}</p>
-            <Button type="button" variant="secondary" className="w-full rounded-xl" onClick={onDismiss}>
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full rounded-xl hover:bg-secondary/70"
+              onClick={onDismiss}
+            >
               Continuar
             </Button>
           </motion.div>

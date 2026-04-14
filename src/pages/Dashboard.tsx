@@ -22,6 +22,7 @@ import {
 import { Settings, Dumbbell, ChevronRight, Moon, Flame, Heart, Zap, Calendar, CheckCircle2, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Navigate } from "react-router-dom";
+import { sectionHeadingClass } from "@/lib/page-ui";
 
 export default function Dashboard() {
   const { data, getDayLog, getDayNumber, addCelebratedMilestone } = useChallenge();
@@ -173,7 +174,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background pb-24">
       {overlay}
-      <div className="px-5 pt-8 pb-6">
+      <div className="px-5 pt-8 pb-4">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-display font-bold text-foreground">
@@ -189,7 +190,12 @@ export default function Dashboard() {
               </div>
             )}
           </div>
-          <Button variant="ghost" size="icon" onClick={() => navigate("/settings")} className="text-muted-foreground hover:text-foreground">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/settings")}
+            className="rounded-xl text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+          >
             <Settings className="w-5 h-5" />
           </Button>
         </div>
@@ -278,7 +284,7 @@ export default function Dashboard() {
       </div>
 
       <div className="px-5 space-y-3">
-        <h2 className="text-sm font-display font-semibold text-muted-foreground uppercase tracking-wider">Ações Rápidas</h2>
+        <h2 className={sectionHeadingClass}>Ações Rápidas</h2>
 
         {[
           { label: "Registrar Dia", sub: "Calorias, treino, cardio, sono", icon: <Calendar className="w-5 h-5 text-action-day" />, path: `/day/${todayStr}` },

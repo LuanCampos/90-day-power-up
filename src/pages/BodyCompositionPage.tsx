@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AreaChart, Area, LabelList, ResponsiveContainer } from "recharts";
 import { cn } from "@/lib/utils";
+import { sectionHeadingClass } from "@/lib/page-ui";
 import { toast } from "@/components/ui/sonner";
 import {
   Scale,
@@ -238,7 +239,7 @@ export default function BodyCompositionPage() {
     <div className="min-h-screen bg-background pb-24">
       <SubpageHeader title="Composição Corporal" onBack={() => navigate("/")} />
 
-      <div className="px-5 space-y-6">
+      <div className="px-5 space-y-5">
         {/* Unified metric cards: delta + mini-chart */}
         {chartData.length >= 1 && (
           <motion.div
@@ -246,9 +247,7 @@ export default function BodyCompositionPage() {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-3"
           >
-            <h2 className="text-sm font-display font-semibold text-muted-foreground uppercase tracking-wider">
-              Evolução
-            </h2>
+            <h2 className={sectionHeadingClass}>Evolução</h2>
             <div className="grid grid-cols-2 gap-3">
               {ALL_METRICS.map((key, i) => {
                 const metricData = chartData.filter((d) => d[key] != null);
@@ -270,7 +269,7 @@ export default function BodyCompositionPage() {
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
-                    className="p-3 rounded-2xl card-elevated border border-border"
+                    className="p-4 rounded-2xl card-elevated border border-border"
                   >
                     <div className="flex items-center gap-1.5 mb-2">
                       <MetricIcon className="w-3.5 h-3.5 shrink-0" style={{ color: METRIC_COLORS[key] }} />
@@ -348,14 +347,8 @@ export default function BodyCompositionPage() {
         {/* Entries list + add button */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-display font-semibold text-muted-foreground uppercase tracking-wider">
-              Registros
-            </h2>
-            <Button
-              size="sm"
-              onClick={openAdd}
-              className="rounded-xl gradient-success text-primary-foreground border-0"
-            >
+            <h2 className={sectionHeadingClass}>Registros</h2>
+            <Button variant="cta" size="sm" onClick={openAdd} className="rounded-xl hover:opacity-95">
               <Plus className="w-4 h-4 mr-1" />
               Adicionar
             </Button>
@@ -392,7 +385,7 @@ export default function BodyCompositionPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    className="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                     onClick={() => openEdit(entry)}
                   >
                     <Pencil className="w-3.5 h-3.5" />
@@ -400,7 +393,7 @@ export default function BodyCompositionPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    className="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-destructive"
                     onClick={() => handleDelete(entry.week)}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -487,10 +480,7 @@ export default function BodyCompositionPage() {
               );
             })}
 
-            <Button
-              onClick={handleSave}
-              className="w-full h-12 rounded-xl gradient-success text-primary-foreground font-display font-semibold border-0"
-            >
+            <Button variant="cta" onClick={handleSave} className="w-full h-12">
               {editingWeek != null ? "Atualizar" : "Salvar"}
             </Button>
           </div>

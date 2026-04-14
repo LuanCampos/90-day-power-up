@@ -1,6 +1,6 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
-import { screen, waitFor, within } from "@testing-library/react";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -11,7 +11,10 @@ import {
   renderWithChallengeRouter,
   writeRawChallengeJson,
 } from "@/test/challenge-test-utils";
+import { ChallengeProvider } from "@/contexts/ChallengeContext";
+import { reactRouterFutureFlags } from "@/lib/react-router-future";
 import DayDetailPage from "@/pages/DayDetailPage";
+import SetupPage from "@/pages/SetupPage";
 
 vi.mock("@/components/CelebrationOverlay", () => ({
   useCelebration: () => ({
@@ -46,17 +49,18 @@ function getCaloriesCard() {
   return card as HTMLElement;
 }
 
-beforeEach(() => {
-  clearChallengeStorage();
-  installSequentialUuidMock();
-  seedDayDetailFixture();
-});
-
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
-
 describe("DayDetailPage", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  describe("com desafio iniciado", () => {
+    beforeEach(() => {
+      clearChallengeStorage();
+      installSequentialUuidMock();
+      seedDayDetailFixture();
+    });
+
   it("adicionar calorias pela UI persiste no localStorage", async () => {
     const user = userEvent.setup();
     renderDayDetail();
@@ -137,6 +141,31 @@ describe("DayDetailPage", () => {
 
     await waitFor(() => {
       expect(readPersistedChallenge().dayLogs["2026-04-13"].workout).toBe("tpl-1");
+    });
+  });
+  });
+
+  describe("redirect", () => {
+    beforeEach(() => {
+      clearChallengeStorage();
+      installSequentialUuidMock();
+    });
+
+    it("sem startDate redireciona para /setup", async () => {
+      render(
+        <MemoryRouter initialEntries={["/day/2026-04-13"]} future={reactRouterFutureFlags}>
+          <ChallengeProvider>
+            <Routes>
+              <Route path="/day/:date" element={<DayDetailPage />} />
+              <Route path="/setup" element={<SetupPage />} />
+            </Routes>
+          </ChallengeProvider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole("heading", { name: /Desafio 90 Dias/i })).toBeInTheDocument();
+      });
     });
   });
 });

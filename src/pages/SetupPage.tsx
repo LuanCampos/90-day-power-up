@@ -57,11 +57,7 @@ export default function SetupPage() {
           </motion.p>
         )}
 
-        <Button
-          onClick={handleStart}
-          disabled={!date}
-          className="w-full h-12 rounded-xl font-display font-semibold text-base gradient-success text-primary-foreground glow-success hover:opacity-90 transition-opacity border-0"
-        >
+        <Button variant="cta" onClick={handleStart} disabled={!date} className="w-full h-12 text-base">
           Começar Desafio
         </Button>
       </motion.div>

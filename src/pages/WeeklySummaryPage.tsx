@@ -16,6 +16,7 @@ import {
 } from "@/lib/challenge-progress";
 import { SubpageHeader } from "@/components/SubpageHeader";
 import { cn } from "@/lib/utils";
+import { sectionHeadingClass } from "@/lib/page-ui";
 import { Check, X, Flame, Moon, Dumbbell, Heart, ChevronLeft, ChevronRight, Trophy } from "lucide-react";
 
 export default function WeeklySummaryPage() {
@@ -73,7 +74,7 @@ export default function WeeklySummaryPage() {
             type="button"
             onClick={() => hasPrevWeek && setViewBlockFirstDay(prevBlockFirst)}
             disabled={!hasPrevWeek}
-            className="p-2 rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+            className="p-2 rounded-xl text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:opacity-30"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -87,7 +88,7 @@ export default function WeeklySummaryPage() {
             type="button"
             onClick={() => hasNextWeek && setViewBlockFirstDay(nextBlockFirst)}
             disabled={!hasNextWeek}
-            className="p-2 rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+            className="p-2 rounded-xl text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:opacity-30"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -142,7 +143,7 @@ export default function WeeklySummaryPage() {
       </div>
 
       <div className="px-5 space-y-3">
-        <h2 className="text-sm font-display font-semibold text-muted-foreground uppercase tracking-wider">Dia a Dia</h2>
+        <h2 className={sectionHeadingClass}>Dia a Dia</h2>
         {days.map((day, i) => (
           <motion.button
             key={day.dateStr}

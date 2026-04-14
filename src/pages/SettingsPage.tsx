@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useChallenge } from "@/contexts/ChallengeContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SubpageHeader } from "@/components/SubpageHeader";
@@ -14,7 +14,11 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const [goals, setLocalGoals] = useState(data.goals);
   const [showReset, setShowReset] = useState(false);
-  const { isStandalone, canPrompt, isIos, promptInstall } = usePwaInstall();
+  const { isStandalone, isIos, promptInstall } = usePwaInstall();
+
+  if (!data.startDate) {
+    return <Navigate to="/setup" replace />;
+  }
 
   const handleSave = () => {
     setGoals(goals);
@@ -38,7 +42,7 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-background pb-24">
       <SubpageHeader title="Configurações" onBack={() => navigate("/")} />
 
-      <div className="px-5 space-y-4">
+      <div className="px-5 space-y-5">
         {fields.map((field, i) => (
           <motion.div
             key={field.key}
@@ -60,7 +64,7 @@ export default function SettingsPage() {
           </motion.div>
         ))}
 
-        <Button onClick={handleSave} className="w-full h-12 rounded-xl gradient-success text-primary-foreground font-display font-semibold border-0 mt-6">
+        <Button variant="cta" onClick={handleSave} className="w-full h-12 mt-6">
           Salvar Metas
         </Button>
 
@@ -95,7 +99,7 @@ export default function SettingsPage() {
                   <Button
                     type="button"
                     variant="secondary"
-                    className="w-full sm:w-auto rounded-xl"
+                    className="w-full sm:w-auto rounded-xl hover:bg-secondary/70"
                     onClick={async () => {
                       const outcome = await promptInstall();
                       if (outcome === "unavailable") {
@@ -114,7 +118,11 @@ export default function SettingsPage() {
 
         <div className="pt-8 border-t border-border mt-8">
           {!showReset ? (
-            <Button variant="outline" onClick={() => setShowReset(true)} className="w-full border-destructive/30 text-destructive hover:bg-destructive/10">
+            <Button
+              variant="outline"
+              onClick={() => setShowReset(true)}
+              className="w-full rounded-xl border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
               <RotateCcw className="w-4 h-4 mr-2" />
               Resetar Desafio
             </Button>
@@ -122,8 +130,16 @@ export default function SettingsPage() {
             <div className="space-y-3">
               <p className="text-sm text-destructive text-center">Tem certeza? Todos os dados serão apagados.</p>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setShowReset(false)} className="flex-1">Cancelar</Button>
-                <Button onClick={handleReset} className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90">Confirmar</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowReset(false)}
+                  className="flex-1 rounded-xl hover:bg-muted/70 hover:text-foreground"
+                >
+                  Cancelar
+                </Button>
+                <Button variant="destructive" onClick={handleReset} className="flex-1 rounded-xl">
+                  Confirmar
+                </Button>
               </div>
             </div>
           )}

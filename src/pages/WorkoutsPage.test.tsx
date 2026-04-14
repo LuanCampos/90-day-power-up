@@ -1,15 +1,20 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
-import { screen, waitFor, within } from "@testing-library/react";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   clearChallengeStorage,
+  DEFAULT_GOALS,
   installSequentialUuidMock,
   readPersistedChallenge,
   renderWithChallengeRouter,
+  writeRawChallengeJson,
 } from "@/test/challenge-test-utils";
+import { ChallengeProvider } from "@/contexts/ChallengeContext";
+import { reactRouterFutureFlags } from "@/lib/react-router-future";
 import WorkoutsPage from "@/pages/WorkoutsPage";
+import SetupPage from "@/pages/SetupPage";
 
 function renderWorkouts() {
   return renderWithChallengeRouter(
@@ -20,16 +25,27 @@ function renderWorkouts() {
   );
 }
 
-beforeEach(() => {
-  clearChallengeStorage();
-  installSequentialUuidMock();
-});
+function seedStartedChallenge() {
+  writeRawChallengeJson({
+    startDate: "2026-04-01",
+    goals: DEFAULT_GOALS,
+    workoutTemplates: [],
+    dayLogs: {},
+    feedback: { celebratedMilestones: [] },
+  });
+}
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 describe("WorkoutsPage", () => {
+  beforeEach(() => {
+    clearChallengeStorage();
+    installSequentialUuidMock();
+    seedStartedChallenge();
+  });
+
   it("adicionar treino pela UI persiste no localStorage", async () => {
     const user = userEvent.setup();
     renderWorkouts();
@@ -78,6 +94,30 @@ describe("WorkoutsPage", () => {
 
     await waitFor(() => {
       expect(readPersistedChallenge().workoutTemplates).toEqual([]);
+    });
+  });
+});
+
+describe("WorkoutsPage redirect", () => {
+  beforeEach(() => {
+    clearChallengeStorage();
+    installSequentialUuidMock();
+  });
+
+  it("sem startDate redireciona para /setup", async () => {
+    render(
+      <MemoryRouter initialEntries={["/workouts"]} future={reactRouterFutureFlags}>
+        <ChallengeProvider>
+          <Routes>
+            <Route path="/workouts" element={<WorkoutsPage />} />
+            <Route path="/setup" element={<SetupPage />} />
+          </Routes>
+        </ChallengeProvider>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /Desafio 90 Dias/i })).toBeInTheDocument();
     });
   });
 });

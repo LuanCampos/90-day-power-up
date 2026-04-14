@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useChallenge } from "@/contexts/ChallengeContext";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, Navigate } from "react-router-dom";
 import { format, addDays, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,6 +23,7 @@ import {
 } from "@/lib/challenge-progress";
 import { SubpageHeader } from "@/components/SubpageHeader";
 import { cn } from "@/lib/utils";
+import { sectionHeadingClass } from "@/lib/page-ui";
 import { Plus, X, Flame, Dumbbell, Heart, Moon, Check, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function DayDetailPage() {
@@ -97,6 +98,9 @@ export default function DayDetailPage() {
   ]);
 
   if (!date) return null;
+  if (!data.startDate) {
+    return <Navigate to="/setup" replace />;
+  }
 
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const currentDate = parseISO(date);
@@ -165,18 +169,18 @@ export default function DayDetailPage() {
       <SubpageHeader title="Registrar Dia" onBack={() => navigate("/")} />
 
       <div className="px-5 pb-4">
-        <div className={cn("mt-3", !focusSection && "flex items-center justify-between")}>
+        <div className="relative mt-3 min-h-10">
           {!focusSection && (
             <button
               type="button"
               onClick={() => canGoPrev && navigate(`/day/${prevDate}`)}
               disabled={!canGoPrev}
-              className="p-2 rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+              className="absolute left-0 top-1/2 z-10 -translate-y-1/2 rounded-xl p-2 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:opacity-30"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
           )}
-          <p className="text-sm text-muted-foreground text-center px-1">
+          <p className="px-11 text-center text-sm text-muted-foreground">
             <span className="font-medium text-foreground">{dayNum != null ? `Dia ${dayNum}` : date}</span>
             <span className="mt-0.5 block text-xs">
               {format(currentDate, "d MMM", { locale: ptBR })}
@@ -187,7 +191,7 @@ export default function DayDetailPage() {
               type="button"
               onClick={() => canGoNext && navigate(`/day/${nextDate}`)}
               disabled={!canGoNext}
-              className="p-2 rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+              className="absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-xl p-2 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:opacity-30"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -198,15 +202,19 @@ export default function DayDetailPage() {
       <div className="px-5 space-y-5">
         {(showAll || focusSection === "calories") && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-5 rounded-2xl card-elevated border border-border space-y-4">
-            <div className="flex items-center gap-2">
-              <Flame className="w-5 h-5 text-pillar-calories" />
-              <h2 className="font-display font-semibold text-foreground">Calorias</h2>
-              <span
-                className={`ml-auto text-2xl font-display font-bold tabular-nums ${caloriesOverBudget ? "text-energy" : "text-foreground"}`}
-              >
-                {caloriesHeadlineNumber}
-              </span>
-              <span className="text-sm text-muted-foreground">{caloriesHeadlineSuffix}</span>
+            <div className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-2">
+              <div className="flex min-w-0 items-center gap-2">
+                <Flame className="h-5 w-5 shrink-0 text-pillar-calories" />
+                <h2 className={sectionHeadingClass}>Calorias</h2>
+              </div>
+              <div className="flex shrink-0 items-baseline gap-1.5 tabular-nums">
+                <span
+                  className={`text-2xl font-display font-bold ${caloriesOverBudget ? "text-energy" : "text-foreground"}`}
+                >
+                  {caloriesHeadlineNumber}
+                </span>
+                <span className="text-sm text-muted-foreground">{caloriesHeadlineSuffix}</span>
+              </div>
             </div>
             {caloriesClosedDayOk && (
               <p className="text-xs font-medium text-success">No alvo (50–100% da meta)</p>
@@ -247,10 +255,28 @@ export default function DayDetailPage() {
                 </motion.div>
               ))}
             </AnimatePresence>
-            <div className="flex gap-2">
-              <Input placeholder="kcal" type="number" value={calAmount} onChange={(e) => setCalAmount(e.target.value)} className="w-24 bg-secondary border-border" />
-              <Input placeholder="Descrição (opcional)" value={calLabel} onChange={(e) => setCalLabel(e.target.value)} className="flex-1 bg-secondary border-border" />
-              <Button onClick={handleAddCalorie} size="icon" variant="secondary" className="shrink-0 border border-border text-foreground hover:bg-muted">
+            <div className="flex w-full flex-wrap items-center gap-2">
+              <Input
+                placeholder="kcal"
+                type="number"
+                value={calAmount}
+                onChange={(e) => setCalAmount(e.target.value)}
+                className="h-10 w-[5.5rem] shrink-0 bg-secondary border-border sm:w-24"
+              />
+              <Input
+                placeholder="Descrição (opcional)"
+                value={calLabel}
+                onChange={(e) => setCalLabel(e.target.value)}
+                className="h-10 min-w-[8rem] flex-1 bg-secondary border-border"
+              />
+              <Button
+                type="button"
+                variant="cta"
+                onClick={handleAddCalorie}
+                size="icon"
+                className="shrink-0 hover:opacity-95"
+                aria-label="Adicionar calorias"
+              >
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
@@ -259,11 +285,13 @@ export default function DayDetailPage() {
 
         {(showAll || focusSection === "workout") && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="p-5 rounded-2xl card-elevated border border-border space-y-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Dumbbell className="w-5 h-5 text-pillar-workout" />
-              <h2 className="font-display font-semibold text-foreground">Treino</h2>
+            <div className="mb-1 flex w-full flex-wrap items-center justify-between gap-x-2 gap-y-1">
+              <div className="flex min-w-0 items-center gap-2">
+                <Dumbbell className="h-5 w-5 shrink-0 text-pillar-workout" />
+                <h2 className={sectionHeadingClass}>Treino</h2>
+              </div>
               {log.workout && data.workoutTemplates.length > 0 && (
-                <span className="ml-auto text-xs font-medium text-success">Feito hoje</span>
+                <span className="shrink-0 text-xs font-medium text-success">Feito hoje</span>
               )}
             </div>
             {data.workoutTemplates.length === 0 ? (
@@ -306,23 +334,61 @@ export default function DayDetailPage() {
 
         {(showAll || focusSection === "cardio") && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="p-5 rounded-2xl card-elevated border border-border space-y-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Heart className="w-5 h-5 text-pillar-cardio" />
-              <h2 className="font-display font-semibold text-foreground">Cardio</h2>
+            <div className="mb-1 flex w-full items-center gap-2">
+              <Heart className="h-5 w-5 shrink-0 text-pillar-cardio" />
+              <h2 className={sectionHeadingClass}>Cardio</h2>
             </div>
-            <Button onClick={() => handleCardio(!log.cardio.done)}
-              variant={log.cardio.done ? "default" : "outline"}
-              className={log.cardio.done ? "gradient-pillar-cardio text-white border-0 hover:opacity-95" : "border-border"}>
-              {log.cardio.done ? "✓ Feito" : "Feito hoje"}
+            <Button
+              onClick={() => handleCardio(!log.cardio.done)}
+              variant={log.cardio.done ? "pillarCardio" : "outline"}
+              className={cn(
+                "w-full sm:w-auto",
+                !log.cardio.done && "rounded-xl border-border hover:bg-muted/70 hover:text-foreground",
+              )}
+            >
+              {log.cardio.done ? (
+                <>
+                  <Check className="w-4 h-4" />
+                  Feito
+                </>
+              ) : (
+                "Feito hoje"
+              )}
             </Button>
             {log.cardio.done && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="flex gap-2 pt-2">
-                <Input placeholder="Minutos" type="number" value={cardioMinutes}
-                  onChange={(e) => { setCardioMinutes(e.target.value); setCardio(date, { done: true, minutes: parseInt(e.target.value) || undefined, caloriesBurned: parseInt(cardioCals) || undefined }); }}
-                  className="w-28 bg-secondary border-border" />
-                <Input placeholder="kcal queimadas" type="number" value={cardioCals}
-                  onChange={(e) => { setCardioCals(e.target.value); setCardio(date, { done: true, minutes: parseInt(cardioMinutes) || undefined, caloriesBurned: parseInt(e.target.value) || undefined }); }}
-                  className="flex-1 bg-secondary border-border" />
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                className="flex w-full flex-wrap items-center gap-2 pt-2"
+              >
+                <Input
+                  placeholder="Minutos"
+                  type="number"
+                  value={cardioMinutes}
+                  onChange={(e) => {
+                    setCardioMinutes(e.target.value);
+                    setCardio(date, {
+                      done: true,
+                      minutes: parseInt(e.target.value) || undefined,
+                      caloriesBurned: parseInt(cardioCals) || undefined,
+                    });
+                  }}
+                  className="h-10 w-[7rem] shrink-0 bg-secondary border-border sm:w-28"
+                />
+                <Input
+                  placeholder="kcal queimadas"
+                  type="number"
+                  value={cardioCals}
+                  onChange={(e) => {
+                    setCardioCals(e.target.value);
+                    setCardio(date, {
+                      done: true,
+                      minutes: parseInt(cardioMinutes) || undefined,
+                      caloriesBurned: parseInt(e.target.value) || undefined,
+                    });
+                  }}
+                  className="h-10 min-w-0 flex-1 bg-secondary border-border"
+                />
               </motion.div>
             )}
           </motion.div>
@@ -330,16 +396,27 @@ export default function DayDetailPage() {
 
         {(showAll || focusSection === "sleep") && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="p-5 rounded-2xl card-elevated border border-border space-y-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Moon className="w-5 h-5 text-pillar-sleep" />
-              <h2 className="font-display font-semibold text-foreground">Sono</h2>
+            <div className="mb-1 flex w-full flex-wrap items-center justify-between gap-x-2 gap-y-1">
+              <div className="flex min-w-0 items-center gap-2">
+                <Moon className="h-5 w-5 shrink-0 text-pillar-sleep" />
+                <h2 className={sectionHeadingClass}>Sono</h2>
+              </div>
               {isSleepGoalMet(log, data.goals) && data.goals.dailySleepHours > 0 && (
-                <span className="ml-auto text-xs font-medium text-success">Sono no alvo</span>
+                <span className="shrink-0 text-xs font-medium text-success">Sono no alvo</span>
               )}
             </div>
-            <div className="flex gap-2">
-              <Input placeholder="Horas de sono" type="number" step="0.5" value={sleepInput} onChange={(e) => setSleepInput(e.target.value)} className="w-32 bg-secondary border-border" />
-              <Button onClick={handleSleep} className="gradient-success text-primary-foreground border-0">Salvar</Button>
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+              <Input
+                placeholder="Horas de sono"
+                type="number"
+                step="0.5"
+                value={sleepInput}
+                onChange={(e) => setSleepInput(e.target.value)}
+                className="h-10 min-w-0 w-full bg-secondary border-border sm:max-w-[12rem] sm:flex-1"
+              />
+              <Button variant="cta" onClick={handleSleep} className="w-full shrink-0 sm:w-auto">
+                Salvar
+              </Button>
             </div>
             {log.sleepHours && data.goals.dailySleepHours > 0 && (
               <AnimatedProgressBar
