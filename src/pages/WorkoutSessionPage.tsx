@@ -8,7 +8,44 @@ import { useCelebration } from "@/components/CelebrationOverlay";
 import { AnimatedProgressBar } from "@/components/AnimatedProgressBar";
 import { SubpageHeader } from "@/components/SubpageHeader";
 import { cn } from "@/lib/utils";
+import { getExerciseImageGroups } from "@/lib/exercise-images";
 import { ChevronLeft, ChevronRight, Check, Dumbbell, Target, PersonStanding } from "lucide-react";
+
+function ExerciseReferenceImages({ name }: { name: string }) {
+  const groups = useMemo(() => getExerciseImageGroups(name), [name]);
+  if (!groups) return null;
+
+  return (
+    <div className="space-y-3 pt-1">
+      {groups.map((group) => (
+        <div key={group.label} className="space-y-1">
+          {groups.length > 1 && (
+            <p className="text-xs font-medium text-muted-foreground text-center">
+              {group.label}
+            </p>
+          )}
+          <div className={cn(
+            "grid gap-2 mx-auto max-w-xs",
+            group.images[1] ? "grid-cols-2" : "grid-cols-1 max-w-[10rem]",
+          )}>
+            {group.images.map((src, i) =>
+              src ? (
+                <div key={i} className="rounded-xl overflow-hidden bg-secondary">
+                  <img
+                    src={src}
+                    alt={`${group.label} — ${i === 0 ? "início" : "fim"}`}
+                    className="w-full aspect-[4/3] object-cover"
+                    loading="eager"
+                  />
+                </div>
+              ) : null,
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function WorkoutSessionPage() {
   const { id } = useParams<{ id: string }>();
@@ -172,6 +209,8 @@ export default function WorkoutSessionPage() {
                 </p>
               )}
             </div>
+
+            <ExerciseReferenceImages name={currentExercise.name} />
 
             {/* Weight input for dumbbell exercises */}
             {isDumbbell && (
