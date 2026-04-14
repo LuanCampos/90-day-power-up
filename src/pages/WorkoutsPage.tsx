@@ -55,8 +55,8 @@ export default function WorkoutsPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-foreground truncate">{t.name}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs text-muted-foreground">
+                <div className="flex items-center gap-2 mt-0.5 min-w-0">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
                     {t.exercises.length} exercício{t.exercises.length !== 1 ? "s" : ""}
                   </span>
                   {t.focus && (

@@ -8,7 +8,7 @@ import { useCelebration } from "@/components/CelebrationOverlay";
 import { AnimatedProgressBar } from "@/components/AnimatedProgressBar";
 import { SubpageHeader } from "@/components/SubpageHeader";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, Check, Dumbbell, Target } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Dumbbell, Target, PersonStanding } from "lucide-react";
 
 export default function WorkoutSessionPage() {
   const { id } = useParams<{ id: string }>();
@@ -157,7 +157,7 @@ export default function WorkoutSessionPage() {
                 {isDumbbell ? (
                   <Dumbbell className="w-5 h-5" />
                 ) : (
-                  <span className="text-lg">🤸</span>
+                  <PersonStanding className="w-5 h-5" />
                 )}
                 <span className="text-xs font-medium uppercase tracking-wider">Exercício {currentIndex + 1}</span>
               </div>
@@ -176,7 +176,7 @@ export default function WorkoutSessionPage() {
             {/* Weight input for dumbbell exercises */}
             {isDumbbell && (
               <div className="flex items-center justify-center gap-2 pt-1">
-                <span className="text-lg">🏋️</span>
+                <Dumbbell className="w-4 h-4 text-muted-foreground" />
                 <Input
                   type="number"
                   value={currentWeight}

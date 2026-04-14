@@ -8,7 +8,7 @@ import { SubpageHeader } from "@/components/SubpageHeader";
 import { SectionCard } from "@/components/SectionCard";
 import { ActionIconButton } from "@/components/ActionIconButton";
 import { sectionHeadingClass } from "@/lib/page-ui";
-import { Plus, Trash2, Dumbbell, Target, Clock, TrendingUp } from "lucide-react";
+import { Plus, Trash2, Dumbbell, Target, Clock, TrendingUp, PersonStanding } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
@@ -25,9 +25,9 @@ function ModalityToggle({
   onChange: (v: ExerciseModality) => void;
   size?: "sm" | "md";
 }) {
-  const opts: { key: ExerciseModality; emoji: string; label: string }[] = [
-    { key: "dumbbell", emoji: "🏋️", label: "Halteres" },
-    { key: "bodyweight", emoji: "🤸", label: "Peso do Corpo" },
+  const opts: { key: ExerciseModality; icon: React.ReactNode; label: string }[] = [
+    { key: "dumbbell", icon: <Dumbbell className={size === "sm" ? "w-3 h-3" : "w-3.5 h-3.5"} />, label: "Halteres" },
+    { key: "bodyweight", icon: <PersonStanding className={size === "sm" ? "w-3 h-3" : "w-3.5 h-3.5"} />, label: "Peso do Corpo" },
   ];
   const isSm = size === "sm";
   return (
@@ -45,7 +45,7 @@ function ModalityToggle({
               : "bg-secondary text-muted-foreground hover:bg-secondary/80",
           )}
         >
-          <span>{o.emoji}</span>
+          {o.icon}
           <span>{o.label}</span>
         </button>
       ))}
