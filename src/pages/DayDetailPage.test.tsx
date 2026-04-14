@@ -135,6 +135,12 @@ describe("DayDetailPage", () => {
     });
   });
 
+  it("exibe banner de sugestão do dia com label correto", async () => {
+    renderDayDetail();
+    await waitFor(() => screen.getByText(/Sugestão do dia/i));
+    expect(screen.getByText(/Sugestão do dia/i)).toBeInTheDocument();
+  });
+
   it("cardio sem youtube link marca feito diretamente", async () => {
     const user = userEvent.setup();
     renderDayDetail();

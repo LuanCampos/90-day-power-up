@@ -6,6 +6,7 @@ import {
   defaultChallengeViewBlockFirstDay,
   getChallengeBlockStats,
   getDailyCaloriesTotal,
+  getDailySuggestion,
   getWeekDayPillarIcons,
   getWeekStats,
   isCalorieGoalMet,
@@ -19,7 +20,7 @@ import {
   isSleepGoalMet,
   isWorkoutPillarMet,
 } from "@/lib/challenge-progress";
-import type { ChallengeGoals, DayLog } from "@/types/challenge";
+import type { ChallengeGoals, DailyScheduleEntry, DayLog } from "@/types/challenge";
 
 const baseGoals: ChallengeGoals = {
   dailyCalories: 2000,
@@ -421,5 +422,42 @@ describe("challenge week block", () => {
     expect(defaultChallengeViewBlockFirstDay("2026-04-01", "2026-04-10", gd)).toBe(8);
     expect(defaultChallengeViewBlockFirstDay("2026-04-01", "2026-03-01", gd)).toBe(1);
     expect(defaultChallengeViewBlockFirstDay("2026-04-01", "2026-07-15", gd)).toBe(85);
+  });
+});
+
+describe("getDailySuggestion", () => {
+  const schedule: DailyScheduleEntry[] = [
+    { workoutId: "w1", cardioId: "c1", label: "Upper A + Core A" },
+    { workoutId: "w2", cardioId: "c2", label: "Lower A + Core B" },
+    {                   cardioId: "c4", label: "Descanso + Core leve" },
+    { workoutId: "w3", cardioId: "c3", label: "Upper B + Core C" },
+    { workoutId: "w4", cardioId: "c1", label: "Lower B + Core A" },
+    {                   cardioId: "c4", label: "Descanso ativo + Core leve" },
+    {                   cardioId: "c4", label: "Descanso total + Core leve" },
+  ];
+
+  it("day 1 maps to index 0", () => {
+    expect(getDailySuggestion(1, schedule)).toEqual(schedule[0]);
+  });
+
+  it("day 7 maps to index 6", () => {
+    expect(getDailySuggestion(7, schedule)).toEqual(schedule[6]);
+  });
+
+  it("cycles every 7 days: day 8 maps to index 0", () => {
+    expect(getDailySuggestion(8, schedule)).toEqual(schedule[0]);
+  });
+
+  it("day 90 maps to index 5 ((90-1)%7 = 5)", () => {
+    expect(getDailySuggestion(90, schedule)).toEqual(schedule[5]);
+  });
+
+  it("returns null for undefined schedule", () => {
+    expect(getDailySuggestion(1, undefined)).toBeNull();
+  });
+
+  it("returns null for wrong-length schedule", () => {
+    expect(getDailySuggestion(1, [])).toBeNull();
+    expect(getDailySuggestion(1, [schedule[0]])).toBeNull();
   });
 });

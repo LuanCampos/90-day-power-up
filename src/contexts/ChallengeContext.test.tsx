@@ -34,6 +34,7 @@ describe("ChallengeProvider persistence", () => {
       expect(stored.goals).toEqual(DEFAULT_GOALS);
       expect(stored.workoutTemplates.length).toBeGreaterThan(0);
       expect(stored.cardioTemplates.length).toBeGreaterThan(0);
+      expect(stored.weeklySchedule).toHaveLength(7);
       expect(stored.dayLogs).toEqual({});
       expect(stored.feedback?.celebratedMilestones).toEqual([]);
     });
@@ -58,6 +59,23 @@ describe("ChallengeProvider persistence", () => {
       expect(stored.dayLogs).toEqual({});
       expect(Array.isArray(stored.feedback?.celebratedMilestones)).toBe(true);
       expect(stored.feedback?.celebratedMilestones).toEqual([]);
+    });
+  });
+
+  it("weeklySchedule: ausente no storage → default 7 entries; presente e válido → mantido", async () => {
+    writeRawChallengeJson({ startDate: "2026-01-01" });
+    renderHook(() => useChallenge(), { wrapper });
+    await waitFor(() => {
+      const stored = readPersistedChallenge();
+      expect(stored.weeklySchedule).toHaveLength(7);
+      expect(stored.weeklySchedule![0].label).toBeTruthy();
+    });
+
+    const custom = Array.from({ length: 7 }, (_, i) => ({ label: `Day ${i + 1}` }));
+    writeRawChallengeJson({ startDate: "2026-01-01", weeklySchedule: custom });
+    const { result } = renderHook(() => useChallenge(), { wrapper });
+    await waitFor(() => {
+      expect(result.current.data.weeklySchedule).toEqual(custom);
     });
   });
 

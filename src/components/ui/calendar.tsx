@@ -7,12 +7,11 @@ import { buttonVariants } from "@/components/ui/button";
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 
-function Calendar({ className, classNames, showOutsideDays = true, mode, ...props }: CalendarProps) {
-  const isRange = mode === "range";
+function Calendar({ className, classNames, showOutsideDays = true, ...props }: CalendarProps) {
+  const isRange = "mode" in props && props.mode === "range";
 
   return (
     <DayPicker
-      mode={mode as any}
       showOutsideDays={showOutsideDays}
       className={cn("p-3", className)}
       classNames={{

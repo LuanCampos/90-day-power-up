@@ -1,5 +1,5 @@
 import { addDays, format } from "date-fns";
-import type { ChallengeGoals, DayLog } from "@/types/challenge";
+import type { ChallengeGoals, DailyScheduleEntry, DayLog } from "@/types/challenge";
 
 export function getDailyCaloriesTotal(log: DayLog): number {
   return log.calories.reduce((s, c) => s + (Number(c.amount) || 0), 0);
@@ -273,4 +273,14 @@ export function hasCelebratedMilestone(
   milestoneId: string,
 ): boolean {
   return Boolean(celebrated?.includes(milestoneId));
+}
+
+/** Returns the suggested workout/cardio for a given challenge day based on the 7-day cycle. */
+export function getDailySuggestion(
+  dayNumber: number,
+  schedule: DailyScheduleEntry[] | undefined,
+): DailyScheduleEntry | null {
+  if (!schedule || schedule.length !== 7) return null;
+  const index = (dayNumber - 1) % 7;
+  return schedule[index] ?? null;
 }

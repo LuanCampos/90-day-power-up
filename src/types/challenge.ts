@@ -68,6 +68,12 @@ export interface BodyCompositionEntry {
   visceralFat?: number;
 }
 
+export interface DailyScheduleEntry {
+  workoutId?: string;
+  cardioId?: string;
+  label: string;
+}
+
 export interface ChallengeData {
   startDate: string | null;
   goals: ChallengeGoals;
@@ -77,4 +83,5 @@ export interface ChallengeData {
   feedback?: ChallengeFeedbackState;
   bodyComposition?: BodyCompositionEntry[];
   activeSession?: ActiveSession;
+  weeklySchedule?: DailyScheduleEntry[];
 }

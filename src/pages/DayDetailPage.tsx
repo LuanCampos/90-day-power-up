@@ -16,6 +16,7 @@ import {
   challengeWeekMilestoneId,
   getChallengeBlockStats,
   getDailyCaloriesTotal,
+  getDailySuggestion,
   hasCelebratedMilestone,
   isCalorieGoalMet,
   isCalorieDayReviewOk,
@@ -31,7 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   Plus, Trash2, Flame, Dumbbell, Heart, Moon, Check, ChevronLeft, ChevronRight,
-  Play, CheckCircle,
+  Play, CheckCircle, CalendarClock,
 } from "lucide-react";
 
 export default function DayDetailPage() {
@@ -135,6 +136,9 @@ export default function DayDetailPage() {
       if (dayLog.cardio) weekCardioIds.add(dayLog.cardio);
     }
   }
+
+  // Daily suggestion based on 7-day cycle
+  const suggestion = dayNum != null ? getDailySuggestion(dayNum, data.weeklySchedule) : null;
 
   const handleAddCalorie = () => {
     const amount = parseInt(calAmount);
@@ -265,6 +269,24 @@ export default function DayDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Suggestion banner */}
+      {suggestion && showAll && (
+        <div className="px-5 pb-2">
+          <div className={cn(
+            "flex items-center gap-3 rounded-xl px-4 py-3 text-sm",
+            suggestion.workoutId
+              ? "bg-primary/10 text-primary"
+              : "bg-muted text-muted-foreground",
+          )}>
+            <CalendarClock className="h-4 w-4 shrink-0" />
+            <div>
+              <span className="font-medium">Sugestão do dia:</span>{" "}
+              <span>{suggestion.label}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="px-5 space-y-5">
         {/* ── CALORIAS ── */}
@@ -405,6 +427,7 @@ export default function DayDetailPage() {
                 {data.workoutTemplates.map((t) => {
                   const isSelectedToday = log.workout === t.id;
                   const doneThisWeek = weekWorkoutIds.has(t.id);
+                  const isSuggested = !isSelectedToday && !doneThisWeek && suggestion?.workoutId === t.id;
                   return (
                     <button key={t.id} onClick={() => handleWorkoutTap(t.id)}
                       className={cn(
@@ -413,7 +436,9 @@ export default function DayDetailPage() {
                           ? "border-success bg-success/10 text-success"
                           : doneThisWeek
                             ? "border-success/30 bg-success/5 text-muted-foreground"
-                            : "border-border bg-secondary text-muted-foreground hover:border-primary/30",
+                            : isSuggested
+                              ? "border-primary/40 bg-primary/5 ring-1 ring-primary/20 text-muted-foreground"
+                              : "border-border bg-secondary text-muted-foreground hover:border-primary/30",
                       )}>
                       <div className="flex items-center gap-1.5 justify-center">
                         {(isSelectedToday || doneThisWeek) && <Check className="w-3.5 h-3.5 shrink-0" />}
@@ -421,6 +446,9 @@ export default function DayDetailPage() {
                       </div>
                       {doneThisWeek && !isSelectedToday && (
                         <span className="text-[10px] text-success/60 block mt-0.5">feito na semana</span>
+                      )}
+                      {isSuggested && (
+                        <span className="text-[10px] text-primary/70 block mt-0.5">sugerido</span>
                       )}
                     </button>
                   );
@@ -467,6 +495,7 @@ export default function DayDetailPage() {
                 {data.cardioTemplates.map((t) => {
                   const isSelectedToday = log.cardio === t.id;
                   const doneThisWeek = weekCardioIds.has(t.id);
+                  const isSuggested = !isSelectedToday && !doneThisWeek && suggestion?.cardioId === t.id;
                   return (
                     <button key={t.id} onClick={() => handleCardioTap(t.id)}
                       className={cn(
@@ -475,7 +504,9 @@ export default function DayDetailPage() {
                           ? "border-success bg-success/10 text-success"
                           : doneThisWeek
                             ? "border-success/30 bg-success/5 text-muted-foreground"
-                            : "border-border bg-secondary text-muted-foreground hover:border-primary/30",
+                            : isSuggested
+                              ? "border-primary/40 bg-primary/5 ring-1 ring-primary/20 text-muted-foreground"
+                              : "border-border bg-secondary text-muted-foreground hover:border-primary/30",
                       )}>
                       <div className="flex items-center gap-1.5 justify-center">
                         {(isSelectedToday || doneThisWeek) && <Check className="w-3.5 h-3.5 shrink-0" />}
@@ -483,6 +514,9 @@ export default function DayDetailPage() {
                       </div>
                       {doneThisWeek && !isSelectedToday && (
                         <span className="text-[10px] text-success/60 block mt-0.5">feito na semana</span>
+                      )}
+                      {isSuggested && (
+                        <span className="text-[10px] text-primary/70 block mt-0.5">sugerido</span>
                       )}
                     </button>
                   );

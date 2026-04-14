@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import {
   ChallengeData, DayLog, CalorieEntry, WorkoutTemplate, CardioTemplate,
   ChallengeGoals, BodyCompositionEntry, ActiveSession, WorkoutExercise,
+  DailyScheduleEntry,
 } from "@/types/challenge";
 import { format } from "date-fns";
 
@@ -81,8 +82,30 @@ const defaultCardioTemplates: CardioTemplate[] = [
   { id: seqId("ct"), name: "Core B", order: 1, objective: "Maior foco em controlo do abdómen e região inferior", intensity: "Moderada" },
   { id: seqId("ct"), name: "Core C", order: 2, objective: "Oblíquos, controlo lateral e estabilidade global", intensity: "Moderada a alta" },
   { id: seqId("ct"), name: "Core leve", order: 3, objective: "Activação, técnica e recuperação", intensity: "Leve" },
-  { id: seqId("ct"), name: "Core off", order: 4, objective: "Recuperação completa", intensity: "Muito leve ou zero" },
 ];
+
+// ── default weekly schedule (matches treino-upper-lower-casa plan) ───────────
+function buildDefaultWeeklySchedule(
+  wt: WorkoutTemplate[],
+  ct: CardioTemplate[],
+): DailyScheduleEntry[] {
+  const w = (order: number) => wt.find(t => t.order === order)?.id;
+  const c = (order: number) => ct.find(t => t.order === order)?.id;
+  return [
+    { workoutId: w(0), cardioId: c(0), label: "Upper A + Core A" },
+    { workoutId: w(2), cardioId: c(1), label: "Lower A + Core B" },
+    {                   cardioId: c(3), label: "Descanso + Core leve" },
+    { workoutId: w(1), cardioId: c(2), label: "Upper B + Core C" },
+    { workoutId: w(3), cardioId: c(0), label: "Lower B + Core A" },
+    {                   cardioId: c(3), label: "Descanso ativo + Core leve" },
+    {                   cardioId: c(3), label: "Descanso total + Core leve" },
+  ];
+}
+
+const defaultWeeklySchedule = buildDefaultWeeklySchedule(
+  defaultWorkoutTemplates,
+  defaultCardioTemplates,
+);
 
 const defaultGoals: ChallengeGoals = {
   dailyCalories: 1600,
@@ -96,6 +119,7 @@ const defaultData: ChallengeData = {
   goals: defaultGoals,
   workoutTemplates: defaultWorkoutTemplates,
   cardioTemplates: defaultCardioTemplates,
+  weeklySchedule: defaultWeeklySchedule,
   dayLogs: {},
   feedback: { celebratedMilestones: [] },
 };
@@ -106,9 +130,22 @@ function goalNumber(value: unknown, fallback: number): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function workoutsHaveNewShape(templates: unknown[]): boolean {
+  return templates.every(
+    (t) => t && typeof t === "object" && "exercises" in t && Array.isArray((t as Record<string, unknown>).exercises),
+  );
+}
+
+function resolveTemplates<T>(saved: T[] | undefined, defaults: T[], isValid: (items: T[]) => boolean): T[] {
+  if (!Array.isArray(saved)) return defaults;
+  if (saved.length === 0) return saved;
+  return isValid(saved) ? saved : defaults;
+}
+
 function normalizeLoadedChallengeData(parsed: Partial<ChallengeData>): ChallengeData {
   const celebrated = parsed.feedback?.celebratedMilestones;
   const pg = (parsed.goals && typeof parsed.goals === "object" ? parsed.goals : {}) as Partial<ChallengeGoals>;
+
   return {
     startDate: parsed.startDate ?? null,
     goals: {
@@ -119,14 +156,17 @@ function normalizeLoadedChallengeData(parsed: Partial<ChallengeData>): Challenge
       weeklyCardios: goalNumber(pg.weeklyCardios, defaultGoals.weeklyCardios),
       weeklyWorkouts: goalNumber(pg.weeklyWorkouts, defaultGoals.weeklyWorkouts),
     },
-    workoutTemplates: Array.isArray(parsed.workoutTemplates) ? parsed.workoutTemplates : defaultWorkoutTemplates,
-    cardioTemplates: Array.isArray(parsed.cardioTemplates) ? parsed.cardioTemplates : defaultCardioTemplates,
+    workoutTemplates: resolveTemplates(parsed.workoutTemplates, defaultWorkoutTemplates, workoutsHaveNewShape),
+    cardioTemplates: resolveTemplates(parsed.cardioTemplates, defaultCardioTemplates, () => true),
     dayLogs: parsed.dayLogs && typeof parsed.dayLogs === "object" ? parsed.dayLogs : {},
     feedback: {
       celebratedMilestones: Array.isArray(celebrated) ? [...celebrated] : [],
     },
     bodyComposition: Array.isArray(parsed.bodyComposition) ? parsed.bodyComposition : [],
     activeSession: parsed.activeSession ?? undefined,
+    weeklySchedule: Array.isArray(parsed.weeklySchedule) && parsed.weeklySchedule.length === 7
+      ? parsed.weeklySchedule
+      : defaultWeeklySchedule,
   };
 }
 
