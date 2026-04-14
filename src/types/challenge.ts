@@ -36,10 +36,20 @@ export interface ChallengeFeedbackState {
   celebratedMilestones?: string[];
 }
 
+export interface BodyCompositionEntry {
+  week: number;          // 0 = baseline, 1-13 = semanas do desafio
+  date: string;          // YYYY-MM-DD — quando o registro foi feito
+  weight?: number;       // kg
+  bodyFatPct?: number;   // %
+  musclePct?: number;    // %
+  visceralFat?: number;  // nível (escala comum de balanças: 1-59)
+}
+
 export interface ChallengeData {
   startDate: string | null; // YYYY-MM-DD
   goals: ChallengeGoals;
   workoutTemplates: WorkoutTemplate[];
   dayLogs: Record<string, DayLog>; // keyed by YYYY-MM-DD
   feedback?: ChallengeFeedbackState;
+  bodyComposition?: BodyCompositionEntry[];
 }

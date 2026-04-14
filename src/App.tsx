@@ -12,6 +12,7 @@ const SetupPage = lazy(() => import("./pages/SetupPage"));
 const DayDetailPage = lazy(() => import("./pages/DayDetailPage"));
 const WorkoutsPage = lazy(() => import("./pages/WorkoutsPage"));
 const WeeklySummaryPage = lazy(() => import("./pages/WeeklySummaryPage"));
+const BodyCompositionPage = lazy(() => import("./pages/BodyCompositionPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="/day/:date" element={<DayDetailPage />} />
               <Route path="/workouts" element={<WorkoutsPage />} />
               <Route path="/weekly" element={<WeeklySummaryPage />} />
+              <Route path="/body" element={<BodyCompositionPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

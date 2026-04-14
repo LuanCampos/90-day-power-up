@@ -19,7 +19,7 @@ import {
   isDashboardWeeklyWorkoutsOnTrack,
   isDayFullyComplete,
 } from "@/lib/challenge-progress";
-import { Settings, Dumbbell, ChevronRight, Moon, Flame, Heart, Zap, Calendar, CheckCircle2 } from "lucide-react";
+import { Settings, Dumbbell, ChevronRight, Moon, Flame, Heart, Zap, Calendar, CheckCircle2, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Navigate } from "react-router-dom";
 
@@ -80,6 +80,13 @@ export default function Dashboard() {
 
   const today = new Date();
   const currentDayNum = getDayNumber(todayStr);
+
+  const isWeekFirstDay = currentDayNum != null && (currentDayNum - 1) % 7 === 0;
+  const bodyCompTargetWeek = currentDayNum != null ? Math.floor((currentDayNum - 1) / 7) : null;
+  const hasBodyCompEntry =
+    bodyCompTargetWeek != null &&
+    (data.bodyComposition ?? []).some((e) => e.week === bodyCompTargetWeek);
+  const showBodyCompReminder = isWeekFirstDay && bodyCompTargetWeek != null && !hasBodyCompEntry;
   const overallProgress = currentDayNum ? (currentDayNum / 90) * 100 : 0;
   const todayLog = getDayLog(todayStr);
 
@@ -205,6 +212,33 @@ export default function Dashboard() {
         </motion.div>
       </div>
 
+      {showBodyCompReminder && (
+        <div className="px-5 mb-4">
+          <motion.button
+            type="button"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            onClick={() => navigate("/body")}
+            className="w-full flex items-start gap-4 p-5 rounded-2xl border-2 border-blue-400/40 bg-blue-400/5 hover:bg-blue-400/10 transition-colors text-left"
+          >
+            <div className="p-3 rounded-xl bg-blue-400/15 shrink-0">
+              <Scale className="w-6 h-6 text-blue-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-display font-bold text-foreground text-base">
+                Hora de registrar suas medidas!
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {bodyCompTargetWeek === 0
+                  ? "Registre seu baseline antes de começar."
+                  : `Registre os dados da Semana ${bodyCompTargetWeek}.`}
+              </p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-blue-400 mt-1 shrink-0" />
+          </motion.button>
+        </div>
+      )}
+
       <div className="px-5 grid grid-cols-2 gap-3 mb-6">
         {statCards.map((card, i) => (
           <motion.button
@@ -249,6 +283,7 @@ export default function Dashboard() {
         {[
           { label: "Registrar Dia", sub: "Calorias, treino, cardio, sono", icon: <Calendar className="w-5 h-5 text-action-day" />, path: `/day/${todayStr}` },
           { label: "Resumo da Semana", sub: "Veja seu progresso semanal", icon: <Zap className="w-5 h-5 text-action-weekly" />, path: "/weekly" },
+          { label: "Composição Corporal", sub: "Acompanhe sua evolução semanal", icon: <Scale className="w-5 h-5 text-blue-400" />, path: "/body" },
           { label: "Meus Treinos", sub: "Gerenciar templates de treino", icon: <Dumbbell className="w-5 h-5 text-pillar-workout" />, path: "/workouts" },
         ].map((action, i) => (
           <motion.button

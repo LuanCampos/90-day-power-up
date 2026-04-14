@@ -11,7 +11,7 @@ import type { ChallengeData } from "@/types/challenge";
 export const CHALLENGE_STORAGE_KEY = "fitness-challenge-90";
 
 export const DEFAULT_GOALS: ChallengeData["goals"] = {
-  dailyCalories: 2000,
+  dailyCalories: 1600,
   dailySleepHours: 8,
   weeklyCardios: 3,
   weeklyWorkouts: 4,

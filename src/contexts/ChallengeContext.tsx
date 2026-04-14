@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { ChallengeData, DayLog, CalorieEntry, CardioEntry, WorkoutTemplate, ChallengeGoals } from "@/types/challenge";
+import { ChallengeData, DayLog, CalorieEntry, CardioEntry, WorkoutTemplate, ChallengeGoals, BodyCompositionEntry } from "@/types/challenge";
 import { format } from "date-fns";
 
 const STORAGE_KEY = "fitness-challenge-90";
 
 const defaultGoals: ChallengeGoals = {
-  dailyCalories: 2000,
+  dailyCalories: 1600,
   dailySleepHours: 8,
   weeklyCardios: 3,
   weeklyWorkouts: 4,
@@ -43,6 +43,7 @@ function normalizeLoadedChallengeData(parsed: Partial<ChallengeData>): Challenge
     feedback: {
       celebratedMilestones: Array.isArray(celebrated) ? [...celebrated] : [],
     },
+    bodyComposition: Array.isArray(parsed.bodyComposition) ? parsed.bodyComposition : [],
   };
 }
 
@@ -77,6 +78,8 @@ interface ChallengeContextType {
   updateWorkoutTemplate: (template: WorkoutTemplate) => void;
   removeWorkoutTemplate: (id: string) => void;
   getDayNumber: (date: string) => number | null;
+  setBodyComposition: (entry: BodyCompositionEntry) => void;
+  removeBodyComposition: (week: number) => void;
   resetChallenge: () => void;
   addCelebratedMilestone: (milestoneId: string) => void;
 }
@@ -172,6 +175,25 @@ export function ChallengeProvider({ children }: { children: React.ReactNode }) {
     return diff + 1;
   }, [data.startDate]);
 
+  const setBodyComposition = useCallback((entry: BodyCompositionEntry) => {
+    setData(prev => {
+      const existing = prev.bodyComposition ?? [];
+      const idx = existing.findIndex(e => e.week === entry.week);
+      const updated = idx >= 0
+        ? existing.map((e, i) => (i === idx ? entry : e))
+        : [...existing, entry];
+      updated.sort((a, b) => a.week - b.week);
+      return { ...prev, bodyComposition: updated };
+    });
+  }, []);
+
+  const removeBodyComposition = useCallback((week: number) => {
+    setData(prev => ({
+      ...prev,
+      bodyComposition: (prev.bodyComposition ?? []).filter(e => e.week !== week),
+    }));
+  }, []);
+
   const resetChallenge = useCallback(() => {
     setData(defaultData);
   }, []);
@@ -194,7 +216,8 @@ export function ChallengeProvider({ children }: { children: React.ReactNode }) {
     <ChallengeContext.Provider value={{
       data, setStartDate, setGoals, getDayLog, addCalorie, removeCalorie,
       setWorkout, setCardio, setSleep, addWorkoutTemplate, updateWorkoutTemplate,
-      removeWorkoutTemplate, getDayNumber, resetChallenge, addCelebratedMilestone,
+      removeWorkoutTemplate, getDayNumber, setBodyComposition, removeBodyComposition,
+      resetChallenge, addCelebratedMilestone,
     }}>
       {children}
     </ChallengeContext.Provider>
