@@ -32,7 +32,8 @@ describe("ChallengeProvider persistence", () => {
       const stored = readPersistedChallenge();
       expect(stored.startDate).toBeNull();
       expect(stored.goals).toEqual(DEFAULT_GOALS);
-      expect(stored.workoutTemplates).toEqual([]);
+      expect(stored.workoutTemplates.length).toBeGreaterThan(0);
+      expect(stored.cardioTemplates.length).toBeGreaterThan(0);
       expect(stored.dayLogs).toEqual({});
       expect(stored.feedback?.celebratedMilestones).toEqual([]);
     });
@@ -43,6 +44,7 @@ describe("ChallengeProvider persistence", () => {
       startDate: "2026-01-01",
       goals: { dailyCalories: 1500 },
       workoutTemplates: "not-an-array",
+      cardioTemplates: null,
       dayLogs: null,
       feedback: {},
     });
@@ -51,7 +53,8 @@ describe("ChallengeProvider persistence", () => {
       const stored = readPersistedChallenge();
       expect(stored.startDate).toBe("2026-01-01");
       expect(stored.goals).toEqual({ ...DEFAULT_GOALS, dailyCalories: 1500 });
-      expect(stored.workoutTemplates).toEqual([]);
+      expect(stored.workoutTemplates.length).toBeGreaterThan(0);
+      expect(stored.cardioTemplates.length).toBeGreaterThan(0);
       expect(stored.dayLogs).toEqual({});
       expect(Array.isArray(stored.feedback?.celebratedMilestones)).toBe(true);
       expect(stored.feedback?.celebratedMilestones).toEqual([]);
@@ -143,12 +146,12 @@ describe("ChallengeProvider persistence", () => {
     writeRawChallengeJson({
       startDate: null,
       goals: DEFAULT_GOALS,
-      workoutTemplates: [],
+      workoutTemplates: [{ id: "orphan", name: "X", order: 0, exercises: [] }],
+      cardioTemplates: [],
       dayLogs: {
         "2026-04-13": {
           date: "2026-04-13",
           calories: [],
-          cardio: { done: false },
           workout: "tpl-1",
         },
       },
@@ -165,22 +168,30 @@ describe("ChallengeProvider persistence", () => {
     });
   });
 
-  it("setCardio persiste done, minutes e caloriesBurned", async () => {
+  it("setCardio persiste cardio template id no dia", async () => {
     const { result } = renderHook(() => useChallenge(), { wrapper });
     await waitFor(() => expect(localStorage.getItem(CHALLENGE_STORAGE_KEY)).not.toBeNull());
     act(() => {
-      result.current.setCardio("2026-04-13", {
-        done: true,
-        minutes: 30,
-        caloriesBurned: 250,
-      });
+      result.current.setCardio("2026-04-13", "ct-1");
     });
     await waitFor(() => {
-      expect(readPersistedChallenge().dayLogs["2026-04-13"].cardio).toEqual({
-        done: true,
-        minutes: 30,
-        caloriesBurned: 250,
-      });
+      expect(readPersistedChallenge().dayLogs["2026-04-13"].cardio).toBe("ct-1");
+    });
+  });
+
+  it("setCardio(undefined) remove cardio do log persistido", async () => {
+    const { result } = renderHook(() => useChallenge(), { wrapper });
+    await waitFor(() => expect(localStorage.getItem(CHALLENGE_STORAGE_KEY)).not.toBeNull());
+    act(() => {
+      result.current.setCardio("2026-04-13", "ct-1");
+    });
+    await waitFor(() => expect(readPersistedChallenge().dayLogs["2026-04-13"].cardio).toBe("ct-1"));
+    act(() => {
+      result.current.setCardio("2026-04-13", undefined);
+    });
+    await waitFor(() => {
+      const log = readPersistedChallenge().dayLogs["2026-04-13"];
+      expect("cardio" in log).toBe(false);
     });
   });
 
@@ -198,22 +209,26 @@ describe("ChallengeProvider persistence", () => {
   it("addWorkoutTemplate persiste template com id gerado", async () => {
     const { result } = renderHook(() => useChallenge(), { wrapper });
     await waitFor(() => expect(localStorage.getItem(CHALLENGE_STORAGE_KEY)).not.toBeNull());
+    const baseLen = readPersistedChallenge().workoutTemplates.length;
     act(() => {
-      result.current.addWorkoutTemplate({ name: "Pernas", order: 0 });
+      result.current.addWorkoutTemplate({ name: "Pernas", order: baseLen, exercises: [] });
     });
     await waitFor(() => {
-      expect(readPersistedChallenge().workoutTemplates).toEqual([
-        { id: "test-uuid-0", name: "Pernas", order: 0 },
-      ]);
+      const tpls = readPersistedChallenge().workoutTemplates;
+      expect(tpls).toHaveLength(baseLen + 1);
+      const added = tpls[tpls.length - 1];
+      expect(added.name).toBe("Pernas");
+      expect(added.id).toBe("test-uuid-0");
     });
   });
 
   it("updateWorkoutTemplate altera nome mantendo id", async () => {
-    const tpl: WorkoutTemplate = { id: "fixed-id", name: "Costas", order: 0 };
+    const tpl: WorkoutTemplate = { id: "fixed-id", name: "Costas", order: 0, exercises: [] };
     writeRawChallengeJson({
       startDate: null,
       goals: DEFAULT_GOALS,
       workoutTemplates: [tpl],
+      cardioTemplates: [],
       dayLogs: {},
       feedback: { celebratedMilestones: [] },
     });
@@ -223,21 +238,21 @@ describe("ChallengeProvider persistence", () => {
       result.current.updateWorkoutTemplate({ ...tpl, name: "Costas B" });
     });
     await waitFor(() => {
-      expect(readPersistedChallenge().workoutTemplates[0]).toEqual({
+      expect(readPersistedChallenge().workoutTemplates[0]).toMatchObject({
         id: "fixed-id",
         name: "Costas B",
-        order: 0,
       });
     });
   });
 
   it("removeWorkoutTemplate remove o item da lista", async () => {
-    const a: WorkoutTemplate = { id: "a", name: "A", order: 0 };
-    const b: WorkoutTemplate = { id: "b", name: "B", order: 1 };
+    const a: WorkoutTemplate = { id: "a", name: "A", order: 0, exercises: [] };
+    const b: WorkoutTemplate = { id: "b", name: "B", order: 1, exercises: [] };
     writeRawChallengeJson({
       startDate: null,
       goals: DEFAULT_GOALS,
       workoutTemplates: [a, b],
+      cardioTemplates: [],
       dayLogs: {},
       feedback: { celebratedMilestones: [] },
     });
@@ -251,30 +266,42 @@ describe("ChallengeProvider persistence", () => {
     });
   });
 
-  it("removeWorkoutTemplate não remove dayLogs com workout id órfão (comportamento atual)", async () => {
+  it("addCardioTemplate persiste template com id gerado", async () => {
+    const { result } = renderHook(() => useChallenge(), { wrapper });
+    await waitFor(() => expect(localStorage.getItem(CHALLENGE_STORAGE_KEY)).not.toBeNull());
+    const baseLen = readPersistedChallenge().cardioTemplates.length;
+    act(() => {
+      result.current.addCardioTemplate({ name: "HIIT", order: baseLen });
+    });
+    await waitFor(() => {
+      const tpls = readPersistedChallenge().cardioTemplates;
+      expect(tpls).toHaveLength(baseLen + 1);
+      const added = tpls[tpls.length - 1];
+      expect(added.name).toBe("HIIT");
+      expect(added.id).toBe("test-uuid-0");
+    });
+  });
+
+  it("removeCardioTemplate remove o item da lista", async () => {
     writeRawChallengeJson({
       startDate: null,
       goals: DEFAULT_GOALS,
-      workoutTemplates: [{ id: "orphan", name: "X", order: 0 }],
-      dayLogs: {
-        "2026-04-13": {
-          date: "2026-04-13",
-          calories: [],
-          cardio: { done: false },
-          workout: "orphan",
-        },
-      },
+      workoutTemplates: [],
+      cardioTemplates: [
+        { id: "ca", name: "Core A", order: 0 },
+        { id: "cb", name: "Core B", order: 1 },
+      ],
+      dayLogs: {},
       feedback: { celebratedMilestones: [] },
     });
     const { result } = renderHook(() => useChallenge(), { wrapper });
-    await waitFor(() => expect(readPersistedChallenge().workoutTemplates).toHaveLength(1));
+    await waitFor(() => expect(readPersistedChallenge().cardioTemplates).toHaveLength(2));
     act(() => {
-      result.current.removeWorkoutTemplate("orphan");
+      result.current.removeCardioTemplate("ca");
     });
     await waitFor(() => {
-      const stored = readPersistedChallenge();
-      expect(stored.workoutTemplates).toEqual([]);
-      expect(stored.dayLogs["2026-04-13"].workout).toBe("orphan");
+      expect(readPersistedChallenge().cardioTemplates).toHaveLength(1);
+      expect(readPersistedChallenge().cardioTemplates[0].id).toBe("cb");
     });
   });
 
@@ -301,12 +328,42 @@ describe("ChallengeProvider persistence", () => {
     });
   });
 
+  it("session management: start, update, clear", async () => {
+    const { result } = renderHook(() => useChallenge(), { wrapper });
+    await waitFor(() => expect(localStorage.getItem(CHALLENGE_STORAGE_KEY)).not.toBeNull());
+    act(() => {
+      result.current.startSession({
+        type: "workout",
+        templateId: "w1",
+        date: "2026-04-13",
+        exerciseProgress: {},
+        currentExerciseIndex: 0,
+      });
+    });
+    await waitFor(() => {
+      expect(readPersistedChallenge().activeSession?.templateId).toBe("w1");
+    });
+    act(() => {
+      result.current.updateSession({ currentExerciseIndex: 2 });
+    });
+    await waitFor(() => {
+      expect(readPersistedChallenge().activeSession?.currentExerciseIndex).toBe(2);
+    });
+    act(() => {
+      result.current.clearSession();
+    });
+    await waitFor(() => {
+      expect(readPersistedChallenge().activeSession).toBeUndefined();
+    });
+  });
+
   it("resetChallenge volta ao estado default persistido", async () => {
     writeRawChallengeJson({
       startDate: "2026-01-01",
       goals: { ...DEFAULT_GOALS, dailyCalories: 1 },
-      workoutTemplates: [{ id: "x", name: "X", order: 0 }],
-      dayLogs: { "2026-04-13": { date: "2026-04-13", calories: [], cardio: { done: true } } },
+      workoutTemplates: [{ id: "x", name: "X", order: 0, exercises: [] }],
+      cardioTemplates: [{ id: "c", name: "C", order: 0 }],
+      dayLogs: { "2026-04-13": { date: "2026-04-13", calories: [], cardio: "c" } },
       feedback: { celebratedMilestones: ["x"] },
     });
     const { result } = renderHook(() => useChallenge(), { wrapper });
@@ -318,7 +375,8 @@ describe("ChallengeProvider persistence", () => {
       const stored = readPersistedChallenge();
       expect(stored.startDate).toBeNull();
       expect(stored.goals).toEqual(DEFAULT_GOALS);
-      expect(stored.workoutTemplates).toEqual([]);
+      expect(stored.workoutTemplates.length).toBeGreaterThan(0);
+      expect(stored.cardioTemplates.length).toBeGreaterThan(0);
       expect(stored.dayLogs).toEqual({});
       expect(stored.feedback?.celebratedMilestones).toEqual([]);
     });
@@ -329,11 +387,11 @@ describe("ChallengeProvider reads", () => {
   it("getDayLog retorna shape default para dia sem log", async () => {
     const { result } = renderHook(() => useChallenge(), { wrapper });
     await waitFor(() => expect(localStorage.getItem(CHALLENGE_STORAGE_KEY)).not.toBeNull());
-    expect(result.current.getDayLog("2026-04-13")).toEqual({
-      date: "2026-04-13",
-      calories: [],
-      cardio: { done: false },
-    });
+    const log = result.current.getDayLog("2026-04-13");
+    expect(log.date).toBe("2026-04-13");
+    expect(log.calories).toEqual([]);
+    expect(log.cardio).toBeUndefined();
+    expect(log.workout).toBeUndefined();
   });
 
   it("getDayNumber retorna null sem startDate", async () => {

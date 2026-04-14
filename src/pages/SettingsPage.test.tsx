@@ -31,6 +31,7 @@ function seedStartedChallenge() {
     startDate: "2026-04-01",
     goals: DEFAULT_GOALS,
     workoutTemplates: [],
+    cardioTemplates: [],
     dayLogs: {},
     feedback: { celebratedMilestones: [] },
   });

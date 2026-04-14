@@ -40,9 +40,10 @@ export default function WeeklySummaryPage() {
     const dayNum = getDayNumber(dateStr);
     const totalCal = getDailyCaloriesTotal(log);
     const workoutTemplate = log.workout ? data.workoutTemplates.find(t => t.id === log.workout) : null;
-    const pillarIcons = getWeekDayPillarIcons(log, data.goals, data.workoutTemplates.length, dateStr, todayStr);
+    const cardioTemplate = log.cardio ? data.cardioTemplates.find(t => t.id === log.cardio) : null;
+    const pillarIcons = getWeekDayPillarIcons(log, data.goals, data.workoutTemplates.length, data.cardioTemplates.length, dateStr, todayStr);
 
-    return { d, dateStr, dayNum, log, totalCal, workoutTemplate, pillarIcons };
+    return { d, dateStr, dayNum, log, totalCal, workoutTemplate, cardioTemplate, pillarIcons };
   });
 
   const prevBlockFirst = blockFirstDay - 7;
@@ -198,7 +199,7 @@ export default function WeeklySummaryPage() {
               </div>
               <div className="flex items-center gap-1.5">
                 <Heart className="w-3.5 h-3.5 shrink-0 text-pillar-cardio" />
-                <span className="text-muted-foreground">{day.log.cardio.done ? "Feito" : "—"}</span>
+                <span className="min-w-0 truncate text-muted-foreground">{day.cardioTemplate ? day.cardioTemplate.name : "—"}</span>
                 <PillarIcon state={day.pillarIcons.cardio} />
               </div>
             </div>

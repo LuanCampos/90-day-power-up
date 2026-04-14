@@ -109,7 +109,7 @@ export default function Dashboard() {
   const workoutProgress = data.goals.weeklyWorkouts > 0 ? (weekWorkouts / data.goals.weeklyWorkouts) * 100 : 0;
   const cardioProgress = data.goals.weeklyCardios > 0 ? (weekCardios / data.goals.weeklyCardios) * 100 : 0;
 
-  const todayComplete = isDayFullyComplete(todayLog, data.goals, data.workoutTemplates.length);
+  const todayComplete = isDayFullyComplete(todayLog, data.goals, data.workoutTemplates.length, data.cardioTemplates.length);
 
   const caloriesOnTrack = isDashboardCaloriesOnTrack(todayLog, data.goals);
   const sleepOnTrack = isDashboardSleepOnTrack(todayLog, data.goals);
@@ -119,7 +119,7 @@ export default function Dashboard() {
     data.goals,
     data.workoutTemplates.length,
   );
-  const cardioOnTrack = isDashboardWeeklyCardiosOnTrack(todayLog, weekCardios, data.goals);
+  const cardioOnTrack = isDashboardWeeklyCardiosOnTrack(todayLog, weekCardios, data.goals, data.cardioTemplates.length);
 
   const statCards = [
     {
@@ -295,6 +295,7 @@ export default function Dashboard() {
           { label: "Resumo da Semana", sub: "Veja seu progresso semanal", icon: <Zap className="w-5 h-5 text-action-weekly" />, path: "/weekly" },
           { label: "Composição Corporal", sub: "Acompanhe sua evolução semanal", icon: <Scale className="w-5 h-5 text-blue-400" />, path: "/body" },
           { label: "Meus Treinos", sub: "Gerenciar templates de treino", icon: <Dumbbell className="w-5 h-5 text-pillar-workout" />, path: "/workouts" },
+          { label: "Meus Cardios", sub: "Gerenciar templates de cardio", icon: <Heart className="w-5 h-5 text-pillar-cardio" />, path: "/cardios" },
         ].map((action, i) => (
           <motion.button
             key={action.path}

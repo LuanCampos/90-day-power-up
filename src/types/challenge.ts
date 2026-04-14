@@ -1,7 +1,36 @@
+export interface WorkoutExercise {
+  id: string;
+  name: string;
+  sets: number;
+  reps: string;
+  targetMuscles: string;
+}
+
 export interface WorkoutTemplate {
   id: string;
   name: string;
   order: number;
+  focus?: string;
+  estimatedMinutes?: number;
+  exercises: WorkoutExercise[];
+}
+
+export interface CardioTemplate {
+  id: string;
+  name: string;
+  order: number;
+  youtubeLink?: string;
+  objective?: string;
+  intensity?: string;
+  estimatedMinutes?: number;
+}
+
+export interface ActiveSession {
+  type: 'workout' | 'cardio';
+  templateId: string;
+  date: string;
+  exerciseProgress: Record<string, boolean[]>;
+  currentExerciseIndex: number;
 }
 
 export interface CalorieEntry {
@@ -10,17 +39,11 @@ export interface CalorieEntry {
   label?: string;
 }
 
-export interface CardioEntry {
-  done: boolean;
-  minutes?: number;
-  caloriesBurned?: number;
-}
-
 export interface DayLog {
-  date: string; // YYYY-MM-DD
+  date: string;
   calories: CalorieEntry[];
-  workout?: string; // workout template id
-  cardio: CardioEntry;
+  workout?: string;
+  cardio?: string;
   sleepHours?: number;
 }
 
@@ -37,19 +60,21 @@ export interface ChallengeFeedbackState {
 }
 
 export interface BodyCompositionEntry {
-  week: number;          // 0 = baseline, 1-13 = semanas do desafio
-  date: string;          // YYYY-MM-DD — quando o registro foi feito
-  weight?: number;       // kg
-  bodyFatPct?: number;   // %
-  musclePct?: number;    // %
-  visceralFat?: number;  // nível (escala comum de balanças: 1-59)
+  week: number;
+  date: string;
+  weight?: number;
+  bodyFatPct?: number;
+  musclePct?: number;
+  visceralFat?: number;
 }
 
 export interface ChallengeData {
-  startDate: string | null; // YYYY-MM-DD
+  startDate: string | null;
   goals: ChallengeGoals;
   workoutTemplates: WorkoutTemplate[];
-  dayLogs: Record<string, DayLog>; // keyed by YYYY-MM-DD
+  cardioTemplates: CardioTemplate[];
+  dayLogs: Record<string, DayLog>;
   feedback?: ChallengeFeedbackState;
   bodyComposition?: BodyCompositionEntry[];
+  activeSession?: ActiveSession;
 }

@@ -10,6 +10,7 @@ import {
   getWeekStats,
   isCalorieGoalMet,
   isCalorieDayReviewOk,
+  isCardioPillarMet,
   isDashboardCaloriesOnTrack,
   isDashboardSleepOnTrack,
   isDashboardWeeklyCardiosOnTrack,
@@ -28,7 +29,7 @@ const baseGoals: ChallengeGoals = {
 };
 
 function emptyLog(date: string): DayLog {
-  return { date, calories: [], cardio: { done: false } };
+  return { date, calories: [] };
 }
 
 describe("getDailyCaloriesTotal", () => {
@@ -39,7 +40,6 @@ describe("getDailyCaloriesTotal", () => {
         { id: "1", amount: 500 },
         { id: "2", amount: 300 },
       ],
-      cardio: { done: false },
     };
     expect(getDailyCaloriesTotal(log)).toBe(800);
   });
@@ -48,7 +48,6 @@ describe("getDailyCaloriesTotal", () => {
     const log = {
       date: "2026-04-13",
       calories: [{ id: "1", amount: "600" as unknown as number }, { id: "2", amount: 100 }],
-      cardio: { done: false },
     } as DayLog;
     expect(getDailyCaloriesTotal(log)).toBe(700);
   });
@@ -139,7 +138,7 @@ describe("isCalorieDayReviewOk", () => {
     expect(isCalorieDayReviewOk(high, baseGoals, "2026-04-12", "2026-04-13")).toBe(false);
   });
 
-  it("false when meta de calorias desligada (evita check enganoso no resumo)", () => {
+  it("false quando meta de calorias desligada (evita check enganoso no resumo)", () => {
     const log: DayLog = {
       ...emptyLog("2026-04-12"),
       calories: [{ id: "1", amount: 3000 }],
@@ -153,7 +152,7 @@ describe("getWeekDayPillarIcons (Dia a Dia)", () => {
 
   it("futuro: nenhum check nem X", () => {
     const log = emptyLog("2026-04-14");
-    expect(getWeekDayPillarIcons(log, baseGoals, 2, "2026-04-14", todayStr)).toEqual({
+    expect(getWeekDayPillarIcons(log, baseGoals, 2, 2, "2026-04-14", todayStr)).toEqual({
       calories: "none",
       sleep: "none",
       workout: "none",
@@ -163,7 +162,7 @@ describe("getWeekDayPillarIcons (Dia a Dia)", () => {
 
   it("hoje: calorias sem ícone; sono sem registro sem ícone; treino e cardio pendentes sem ícone", () => {
     const log = emptyLog(todayStr);
-    expect(getWeekDayPillarIcons(log, baseGoals, 2, todayStr, todayStr)).toEqual({
+    expect(getWeekDayPillarIcons(log, baseGoals, 2, 2, todayStr, todayStr)).toEqual({
       calories: "none",
       sleep: "none",
       workout: "none",
@@ -176,33 +175,33 @@ describe("getWeekDayPillarIcons (Dia a Dia)", () => {
       ...emptyLog(todayStr),
       calories: [{ id: "1", amount: 1500 }],
     };
-    expect(getWeekDayPillarIcons(log, baseGoals, 2, todayStr, todayStr).calories).toBe("none");
+    expect(getWeekDayPillarIcons(log, baseGoals, 2, 2, todayStr, todayStr).calories).toBe("none");
   });
 
   it("hoje: sono registrado fora da faixa => bad", () => {
     const log: DayLog = { ...emptyLog(todayStr), sleepHours: 4 };
-    expect(getWeekDayPillarIcons(log, baseGoals, 2, todayStr, todayStr).sleep).toBe("bad");
+    expect(getWeekDayPillarIcons(log, baseGoals, 2, 2, todayStr, todayStr).sleep).toBe("bad");
   });
 
   it("hoje: sono no alvo => good", () => {
     const log: DayLog = { ...emptyLog(todayStr), sleepHours: 8 };
-    expect(getWeekDayPillarIcons(log, baseGoals, 2, todayStr, todayStr).sleep).toBe("good");
+    expect(getWeekDayPillarIcons(log, baseGoals, 2, 2, todayStr, todayStr).sleep).toBe("good");
   });
 
   it("hoje: treino e cardio marcados => good", () => {
     const log: DayLog = {
       ...emptyLog(todayStr),
       workout: "w1",
-      cardio: { done: true },
+      cardio: "c1",
     };
-    const icons = getWeekDayPillarIcons(log, baseGoals, 2, todayStr, todayStr);
+    const icons = getWeekDayPillarIcons(log, baseGoals, 2, 2, todayStr, todayStr);
     expect(icons.workout).toBe("good");
     expect(icons.cardio).toBe("good");
   });
 
   it("passado: pilares não atendidos => bad", () => {
     const log = emptyLog("2026-04-12");
-    expect(getWeekDayPillarIcons(log, baseGoals, 2, "2026-04-12", todayStr)).toEqual({
+    expect(getWeekDayPillarIcons(log, baseGoals, 2, 2, "2026-04-12", todayStr)).toEqual({
       calories: "bad",
       sleep: "bad",
       workout: "bad",
@@ -216,9 +215,9 @@ describe("getWeekDayPillarIcons (Dia a Dia)", () => {
       calories: [{ id: "1", amount: 1500 }],
       sleepHours: 8,
       workout: "w1",
-      cardio: { done: true },
+      cardio: "c1",
     };
-    expect(getWeekDayPillarIcons(log, baseGoals, 2, "2026-04-12", todayStr)).toEqual({
+    expect(getWeekDayPillarIcons(log, baseGoals, 2, 2, "2026-04-12", todayStr)).toEqual({
       calories: "good",
       sleep: "good",
       workout: "good",
@@ -229,13 +228,18 @@ describe("getWeekDayPillarIcons (Dia a Dia)", () => {
   it("meta calorias 0 => coluna calorias sempre none", () => {
     const goals = { ...baseGoals, dailyCalories: 0 };
     const past = { ...emptyLog("2026-04-12"), calories: [{ id: "1", amount: 9000 }] };
-    expect(getWeekDayPillarIcons(past, goals, 2, "2026-04-12", todayStr).calories).toBe("none");
-    expect(getWeekDayPillarIcons(emptyLog(todayStr), goals, 2, todayStr, todayStr).calories).toBe("none");
+    expect(getWeekDayPillarIcons(past, goals, 2, 2, "2026-04-12", todayStr).calories).toBe("none");
+    expect(getWeekDayPillarIcons(emptyLog(todayStr), goals, 2, 2, todayStr, todayStr).calories).toBe("none");
   });
 
-  it("sem templates => workout sempre none", () => {
+  it("sem workout templates => workout sempre none", () => {
     const log: DayLog = { ...emptyLog("2026-04-12"), workout: "w1" };
-    expect(getWeekDayPillarIcons(log, baseGoals, 0, "2026-04-12", todayStr).workout).toBe("none");
+    expect(getWeekDayPillarIcons(log, baseGoals, 0, 2, "2026-04-12", todayStr).workout).toBe("none");
+  });
+
+  it("sem cardio templates => cardio sempre none", () => {
+    const log: DayLog = { ...emptyLog("2026-04-12"), cardio: "c1" };
+    expect(getWeekDayPillarIcons(log, baseGoals, 2, 0, "2026-04-12", todayStr).cardio).toBe("none");
   });
 });
 
@@ -277,16 +281,29 @@ describe("isWorkoutPillarMet", () => {
   });
 });
 
+describe("isCardioPillarMet", () => {
+  it("no templates => N/A", () => {
+    const log = emptyLog("2026-04-13");
+    expect(isCardioPillarMet(log, 0)).toBe(true);
+  });
+
+  it("requires cardio id when templates exist", () => {
+    const log = emptyLog("2026-04-13");
+    expect(isCardioPillarMet(log, 2)).toBe(false);
+    expect(isCardioPillarMet({ ...log, cardio: "c1" }, 2)).toBe(true);
+  });
+});
+
 describe("isDayFullyComplete", () => {
   it("true when all pillars met", () => {
     const log: DayLog = {
       date: "2026-04-13",
       calories: [{ id: "1", amount: 2000 }],
       workout: "w1",
-      cardio: { done: true },
+      cardio: "c1",
       sleepHours: 8,
     };
-    expect(isDayFullyComplete(log, baseGoals, 1)).toBe(true);
+    expect(isDayFullyComplete(log, baseGoals, 1, 1)).toBe(true);
   });
 
   it("false if cardio missing", () => {
@@ -294,10 +311,19 @@ describe("isDayFullyComplete", () => {
       date: "2026-04-13",
       calories: [{ id: "1", amount: 2000 }],
       workout: "w1",
-      cardio: { done: false },
       sleepHours: 8,
     };
-    expect(isDayFullyComplete(log, baseGoals, 1)).toBe(false);
+    expect(isDayFullyComplete(log, baseGoals, 1, 1)).toBe(false);
+  });
+
+  it("true if no cardio templates (pillar auto-met)", () => {
+    const log: DayLog = {
+      date: "2026-04-13",
+      calories: [{ id: "1", amount: 2000 }],
+      workout: "w1",
+      sleepHours: 8,
+    };
+    expect(isDayFullyComplete(log, baseGoals, 1, 0)).toBe(true);
   });
 });
 
@@ -326,18 +352,19 @@ describe("Dashboard stat card on-track (verde vs laranja)", () => {
 
   it("cardios: verde com meta do bloco batida ou cardio hoje", () => {
     const noToday = emptyLog("2026-04-13");
-    expect(isDashboardWeeklyCardiosOnTrack(noToday, 2, baseGoals)).toBe(false);
-    expect(isDashboardWeeklyCardiosOnTrack({ ...noToday, cardio: { done: true } }, 2, baseGoals)).toBe(true);
-    expect(isDashboardWeeklyCardiosOnTrack(noToday, 3, baseGoals)).toBe(true);
-    expect(isDashboardWeeklyCardiosOnTrack(noToday, 0, { ...baseGoals, weeklyCardios: 0 })).toBe(true);
+    expect(isDashboardWeeklyCardiosOnTrack(noToday, 2, baseGoals, 2)).toBe(false);
+    expect(isDashboardWeeklyCardiosOnTrack({ ...noToday, cardio: "c1" }, 2, baseGoals, 2)).toBe(true);
+    expect(isDashboardWeeklyCardiosOnTrack(noToday, 3, baseGoals, 2)).toBe(true);
+    expect(isDashboardWeeklyCardiosOnTrack(noToday, 0, { ...baseGoals, weeklyCardios: 0 }, 2)).toBe(true);
+    expect(isDashboardWeeklyCardiosOnTrack(noToday, 0, baseGoals, 0)).toBe(true);
   });
 });
 
 describe("getWeekStats", () => {
   it("counts workouts and cardios across 7 days", () => {
     const logs: Record<string, DayLog> = {
-      "2026-04-13": { ...emptyLog("2026-04-13"), workout: "a", cardio: { done: true } },
-      "2026-04-14": { ...emptyLog("2026-04-14"), cardio: { done: true } },
+      "2026-04-13": { ...emptyLog("2026-04-13"), workout: "a", cardio: "c1" },
+      "2026-04-14": { ...emptyLog("2026-04-14"), cardio: "c2" },
     };
     const weekStart = new Date("2026-04-13T12:00:00");
     const stats = getWeekStats(weekStart, (d) => logs[d] || emptyLog(d));
@@ -375,7 +402,7 @@ describe("challenge week block", () => {
   it("getChallengeBlockStats uses challenge dates", () => {
     const start = "2026-04-01";
     const stats = getChallengeBlockStats(start, 1, 7, (d) =>
-      d === "2026-04-02" ? { ...emptyLog(d), workout: "a", cardio: { done: true } } : emptyLog(d),
+      d === "2026-04-02" ? { ...emptyLog(d), workout: "a", cardio: "c1" } : emptyLog(d),
     );
     expect(stats.weekWorkouts).toBe(1);
     expect(stats.weekCardios).toBe(1);

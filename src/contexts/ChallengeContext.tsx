@@ -1,8 +1,88 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { ChallengeData, DayLog, CalorieEntry, CardioEntry, WorkoutTemplate, ChallengeGoals, BodyCompositionEntry } from "@/types/challenge";
+import {
+  ChallengeData, DayLog, CalorieEntry, WorkoutTemplate, CardioTemplate,
+  ChallengeGoals, BodyCompositionEntry, ActiveSession, WorkoutExercise,
+} from "@/types/challenge";
 import { format } from "date-fns";
 
 const STORAGE_KEY = "fitness-challenge-90";
+
+// ── helpers for stable default IDs ──────────────────────────────────────────
+let _seqId = 0;
+function seqId(prefix: string) { return `${prefix}-${++_seqId}`; }
+
+function exercise(name: string, sets: number, reps: string, targetMuscles: string): WorkoutExercise {
+  return { id: seqId("ex"), name, sets, reps, targetMuscles };
+}
+
+// ── default workout templates ───────────────────────────────────────────────
+const defaultWorkoutTemplates: WorkoutTemplate[] = [
+  {
+    id: seqId("wt"),
+    name: "Upper A",
+    order: 0,
+    focus: "Peitoral, costas médias e braços",
+    estimatedMinutes: 45,
+    exercises: [
+      exercise("Supino com halteres", 3, "8-12", "Peitoral, tríceps, ombro anterior"),
+      exercise("Remada curvada com halteres", 3, "8-12", "Costas médias, dorsal, bíceps"),
+      exercise("Elevação lateral", 3, "12-15", "Deltoide lateral"),
+      exercise("Flexões", 2, "até próximo da falha", "Peitoral, tríceps, ombro anterior"),
+      exercise("Superset: Rosca alternada + Tríceps francês", 2, "10-12 cada", "Bíceps + tríceps"),
+    ],
+  },
+  {
+    id: seqId("wt"),
+    name: "Upper B",
+    order: 1,
+    focus: "Ombros, costas altas e dorsal",
+    estimatedMinutes: 45,
+    exercises: [
+      exercise("Desenvolvimento com halteres", 3, "8-10", "Ombros, tríceps"),
+      exercise("Remada unilateral com halter", 3, "10-12", "Costas, dorsal, bíceps"),
+      exercise("Pullover com halter", 3, "10-15", "Dorsal, serrátil, caixa torácica"),
+      exercise("Crucifixo inverso", 3, "12-15", "Deltoide posterior, costas altas"),
+      exercise("Superset: Rosca martelo + Tríceps francês", 2, "10-12 cada", "Braquial/bíceps + tríceps"),
+    ],
+  },
+  {
+    id: seqId("wt"),
+    name: "Lower A",
+    order: 2,
+    focus: "Quadríceps e glúteos",
+    estimatedMinutes: 45,
+    exercises: [
+      exercise("Agachamento goblet com pausa", 3, "10-12", "Quadríceps, glúteos, core"),
+      exercise("Levantamento terra romeno com halteres", 3, "8-12", "Posteriores, glúteos"),
+      exercise("Afundo reverso com halteres", 3, "10-12 por perna", "Glúteos, quadríceps, adutores"),
+      exercise("Agachamento isométrico na parede", 2, "30-45 s", "Quadríceps"),
+      exercise("Elevação de panturrilha em pé", 3, "15-20", "Panturrilhas"),
+    ],
+  },
+  {
+    id: seqId("wt"),
+    name: "Lower B",
+    order: 3,
+    focus: "Glúteos, posteriores e estabilidade",
+    estimatedMinutes: 45,
+    exercises: [
+      exercise("Agachamento búlgaro com halteres", 3, "10-12 por perna", "Glúteos, quadríceps"),
+      exercise("Hip thrust no chão com halter e pausa", 3, "12-15", "Glúteos, posteriores"),
+      exercise("Stiff unilateral com halter", 3, "10-12 por perna", "Posteriores, glúteos, estabilidade"),
+      exercise("Ponte de glúteo unilateral", 2, "12-15 por perna", "Glúteos"),
+      exercise("Elevação de panturrilha unilateral", 3, "15-20 por perna", "Panturrilhas"),
+    ],
+  },
+];
+
+// ── default cardio templates ────────────────────────────────────────────────
+const defaultCardioTemplates: CardioTemplate[] = [
+  { id: seqId("ct"), name: "Core A", order: 0, objective: "Estabilidade do tronco e resistência abdominal", intensity: "Moderada" },
+  { id: seqId("ct"), name: "Core B", order: 1, objective: "Maior foco em controlo do abdómen e região inferior", intensity: "Moderada" },
+  { id: seqId("ct"), name: "Core C", order: 2, objective: "Oblíquos, controlo lateral e estabilidade global", intensity: "Moderada a alta" },
+  { id: seqId("ct"), name: "Core leve", order: 3, objective: "Activação, técnica e recuperação", intensity: "Leve" },
+  { id: seqId("ct"), name: "Core off", order: 4, objective: "Recuperação completa", intensity: "Muito leve ou zero" },
+];
 
 const defaultGoals: ChallengeGoals = {
   dailyCalories: 1600,
@@ -14,7 +94,8 @@ const defaultGoals: ChallengeGoals = {
 const defaultData: ChallengeData = {
   startDate: null,
   goals: defaultGoals,
-  workoutTemplates: [],
+  workoutTemplates: defaultWorkoutTemplates,
+  cardioTemplates: defaultCardioTemplates,
   dayLogs: {},
   feedback: { celebratedMilestones: [] },
 };
@@ -38,12 +119,14 @@ function normalizeLoadedChallengeData(parsed: Partial<ChallengeData>): Challenge
       weeklyCardios: goalNumber(pg.weeklyCardios, defaultGoals.weeklyCardios),
       weeklyWorkouts: goalNumber(pg.weeklyWorkouts, defaultGoals.weeklyWorkouts),
     },
-    workoutTemplates: Array.isArray(parsed.workoutTemplates) ? parsed.workoutTemplates : [],
+    workoutTemplates: Array.isArray(parsed.workoutTemplates) ? parsed.workoutTemplates : defaultWorkoutTemplates,
+    cardioTemplates: Array.isArray(parsed.cardioTemplates) ? parsed.cardioTemplates : defaultCardioTemplates,
     dayLogs: parsed.dayLogs && typeof parsed.dayLogs === "object" ? parsed.dayLogs : {},
     feedback: {
       celebratedMilestones: Array.isArray(celebrated) ? [...celebrated] : [],
     },
     bodyComposition: Array.isArray(parsed.bodyComposition) ? parsed.bodyComposition : [],
+    activeSession: parsed.activeSession ?? undefined,
   };
 }
 
@@ -72,16 +155,22 @@ interface ChallengeContextType {
   addCalorie: (date: string, entry: Omit<CalorieEntry, "id">) => void;
   removeCalorie: (date: string, entryId: string) => void;
   setWorkout: (date: string, workoutId: string | undefined) => void;
-  setCardio: (date: string, cardio: CardioEntry) => void;
+  setCardio: (date: string, cardioId: string | undefined) => void;
   setSleep: (date: string, hours: number) => void;
   addWorkoutTemplate: (template: Omit<WorkoutTemplate, "id">) => void;
   updateWorkoutTemplate: (template: WorkoutTemplate) => void;
   removeWorkoutTemplate: (id: string) => void;
+  addCardioTemplate: (template: Omit<CardioTemplate, "id">) => void;
+  updateCardioTemplate: (template: CardioTemplate) => void;
+  removeCardioTemplate: (id: string) => void;
   getDayNumber: (date: string) => number | null;
   setBodyComposition: (entry: BodyCompositionEntry) => void;
   removeBodyComposition: (week: number) => void;
   resetChallenge: () => void;
   addCelebratedMilestone: (milestoneId: string) => void;
+  startSession: (session: ActiveSession) => void;
+  updateSession: (updates: Partial<ActiveSession>) => void;
+  clearSession: () => void;
 }
 
 const ChallengeContext = createContext<ChallengeContextType | null>(null);
@@ -102,16 +191,12 @@ export function ChallengeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const getDayLog = useCallback((date: string): DayLog => {
-    return data.dayLogs[date] || {
-      date,
-      calories: [],
-      cardio: { done: false },
-    };
+    return data.dayLogs[date] || { date, calories: [] };
   }, [data.dayLogs]);
 
   const updateDayLog = useCallback((date: string, updater: (log: DayLog) => DayLog) => {
     setData(prev => {
-      const existing = prev.dayLogs[date] || { date, calories: [], cardio: { done: false } };
+      const existing = prev.dayLogs[date] || { date, calories: [] };
       return {
         ...prev,
         dayLogs: { ...prev.dayLogs, [date]: updater(existing) },
@@ -137,8 +222,8 @@ export function ChallengeProvider({ children }: { children: React.ReactNode }) {
     updateDayLog(date, log => ({ ...log, workout: workoutId }));
   }, [updateDayLog]);
 
-  const setCardio = useCallback((date: string, cardio: CardioEntry) => {
-    updateDayLog(date, log => ({ ...log, cardio }));
+  const setCardio = useCallback((date: string, cardioId: string | undefined) => {
+    updateDayLog(date, log => ({ ...log, cardio: cardioId }));
   }, [updateDayLog]);
 
   const setSleep = useCallback((date: string, hours: number) => {
@@ -163,6 +248,27 @@ export function ChallengeProvider({ children }: { children: React.ReactNode }) {
     setData(prev => ({
       ...prev,
       workoutTemplates: prev.workoutTemplates.filter(t => t.id !== id),
+    }));
+  }, []);
+
+  const addCardioTemplate = useCallback((template: Omit<CardioTemplate, "id">) => {
+    setData(prev => ({
+      ...prev,
+      cardioTemplates: [...prev.cardioTemplates, { ...template, id: crypto.randomUUID() }],
+    }));
+  }, []);
+
+  const updateCardioTemplate = useCallback((template: CardioTemplate) => {
+    setData(prev => ({
+      ...prev,
+      cardioTemplates: prev.cardioTemplates.map(t => t.id === template.id ? template : t),
+    }));
+  }, []);
+
+  const removeCardioTemplate = useCallback((id: string) => {
+    setData(prev => ({
+      ...prev,
+      cardioTemplates: prev.cardioTemplates.filter(t => t.id !== id),
     }));
   }, []);
 
@@ -212,12 +318,33 @@ export function ChallengeProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const startSession = useCallback((session: ActiveSession) => {
+    setData(prev => ({ ...prev, activeSession: session }));
+  }, []);
+
+  const updateSession = useCallback((updates: Partial<ActiveSession>) => {
+    setData(prev => {
+      if (!prev.activeSession) return prev;
+      return { ...prev, activeSession: { ...prev.activeSession, ...updates } };
+    });
+  }, []);
+
+  const clearSession = useCallback(() => {
+    setData(prev => {
+      const { activeSession: _, ...rest } = prev;
+      return { ...rest, activeSession: undefined };
+    });
+  }, []);
+
   return (
     <ChallengeContext.Provider value={{
       data, setStartDate, setGoals, getDayLog, addCalorie, removeCalorie,
-      setWorkout, setCardio, setSleep, addWorkoutTemplate, updateWorkoutTemplate,
-      removeWorkoutTemplate, getDayNumber, setBodyComposition, removeBodyComposition,
+      setWorkout, setCardio, setSleep,
+      addWorkoutTemplate, updateWorkoutTemplate, removeWorkoutTemplate,
+      addCardioTemplate, updateCardioTemplate, removeCardioTemplate,
+      getDayNumber, setBodyComposition, removeBodyComposition,
       resetChallenge, addCelebratedMilestone,
+      startSession, updateSession, clearSession,
     }}>
       {children}
     </ChallengeContext.Provider>

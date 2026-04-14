@@ -26,7 +26,13 @@ import {
 import { SubpageHeader } from "@/components/SubpageHeader";
 import { cn } from "@/lib/utils";
 import { sectionHeadingClass } from "@/lib/page-ui";
-import { Plus, Trash2, Flame, Dumbbell, Heart, Moon, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Plus, Trash2, Flame, Dumbbell, Heart, Moon, Check, ChevronLeft, ChevronRight,
+  Play, CheckCircle,
+} from "lucide-react";
 
 export default function DayDetailPage() {
   const { date } = useParams<{ date: string }>();
@@ -46,14 +52,16 @@ export default function DayDetailPage() {
   const [calAmount, setCalAmount] = useState("");
   const [calLabel, setCalLabel] = useState("");
   const [sleepInput, setSleepInput] = useState(log.sleepHours?.toString() || "");
-  const [cardioMinutes, setCardioMinutes] = useState(log.cardio.minutes?.toString() || "");
-  const [cardioCals, setCardioCals] = useState(log.cardio.caloriesBurned?.toString() || "");
+
+  // Action dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogTarget, setDialogTarget] = useState<{ type: "workout" | "cardio"; templateId: string } | null>(null);
 
   const prevDayCompleteRef = useRef<{ date: string; complete: boolean } | null>(null);
   const lastWeekFireRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const complete = isDayFullyComplete(log, data.goals, data.workoutTemplates.length);
+    const complete = isDayFullyComplete(log, data.goals, data.workoutTemplates.length, data.cardioTemplates.length);
     const prev = prevDayCompleteRef.current;
     if (!prev || prev.date !== safeDate) {
       prevDayCompleteRef.current = { date: safeDate, complete };
@@ -63,7 +71,7 @@ export default function DayDetailPage() {
       celebrate("day", "Dia completo! Todas as metas de hoje estão em dia.");
     }
     prevDayCompleteRef.current = { date: safeDate, complete };
-  }, [log, data.goals, data.workoutTemplates.length, safeDate, celebrate]);
+  }, [log, data.goals, data.workoutTemplates.length, data.cardioTemplates.length, safeDate, celebrate]);
 
   useEffect(() => {
     if (!date || !data.startDate) return;
@@ -113,7 +121,9 @@ export default function DayDetailPage() {
   const canGoPrev = prevDayNum !== null;
   const canGoNext = nextDayNum !== null;
 
+  // Weekly template usage tracking
   const weekWorkoutIds = new Set<string>();
+  const weekCardioIds = new Set<string>();
   if (dayNum != null && data.startDate) {
     const { firstDay, lastDay } = challengeBlockDayRange(dayNum);
     const base = new Date(data.startDate + "T00:00:00");
@@ -122,6 +132,7 @@ export default function DayDetailPage() {
       if (d === date) continue;
       const dayLog = getDayLog(d);
       if (dayLog.workout) weekWorkoutIds.add(dayLog.workout);
+      if (dayLog.cardio) weekCardioIds.add(dayLog.cardio);
     }
   }
 
@@ -153,17 +164,70 @@ export default function DayDetailPage() {
     }
   };
 
-  const handleCardio = (done: boolean) => {
-    const turningOn = done && !log.cardio.done;
-    setCardio(date, {
-      done,
-      minutes: parseInt(cardioMinutes) || undefined,
-      caloriesBurned: parseInt(cardioCals) || undefined,
-    });
-    if (turningOn) celebrate("goal", "Cardio registrado!");
+  // Template tap handlers
+  const handleWorkoutTap = (templateId: string) => {
+    const isSelected = log.workout === templateId;
+    if (isSelected) {
+      setWorkout(date, undefined);
+      return;
+    }
+    setDialogTarget({ type: "workout", templateId });
+    setDialogOpen(true);
   };
 
+  const handleCardioTap = (templateId: string) => {
+    const isSelected = log.cardio === templateId;
+    if (isSelected) {
+      setCardio(date, undefined);
+      return;
+    }
+    const template = data.cardioTemplates.find(t => t.id === templateId);
+    if (template?.youtubeLink) {
+      setDialogTarget({ type: "cardio", templateId });
+      setDialogOpen(true);
+    } else {
+      setCardio(date, templateId);
+      celebrate("goal", "Cardio registrado!");
+    }
+  };
+
+  const handleMarkDone = () => {
+    if (!dialogTarget) return;
+    if (dialogTarget.type === "workout") {
+      setWorkout(date, dialogTarget.templateId);
+      const t = data.workoutTemplates.find(w => w.id === dialogTarget.templateId);
+      celebrate("goal", `Treino "${t?.name}" registrado!`);
+    } else {
+      setCardio(date, dialogTarget.templateId);
+      celebrate("goal", "Cardio registrado!");
+    }
+    setDialogOpen(false);
+    setDialogTarget(null);
+  };
+
+  const handleDoNow = () => {
+    if (!dialogTarget) return;
+    setDialogOpen(false);
+    if (dialogTarget.type === "workout") {
+      navigate(`/session/workout/${dialogTarget.templateId}?date=${date}`);
+    } else {
+      navigate(`/session/cardio/${dialogTarget.templateId}?date=${date}`);
+    }
+    setDialogTarget(null);
+  };
+
+  // Active session resume
+  const activeSession = data.activeSession;
+  const hasWorkoutSession = activeSession?.type === "workout" && activeSession.date === date;
+  const hasCardioSession = activeSession?.type === "cardio" && activeSession.date === date;
+
   const showAll = !focusSection;
+
+  const dialogTemplateLabel = dialogTarget
+    ? dialogTarget.type === "workout"
+      ? data.workoutTemplates.find(w => w.id === dialogTarget.templateId)?.name
+      : data.cardioTemplates.find(c => c.id === dialogTarget.templateId)?.name
+    : "";
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -248,7 +312,6 @@ export default function DayDetailPage() {
               warnOverStyle="energy"
             />
 
-            {/* Calorie entries list */}
             <AnimatePresence>
               {log.calories.map((entry) => (
                 <motion.div
@@ -275,7 +338,6 @@ export default function DayDetailPage() {
               ))}
             </AnimatePresence>
 
-            {/* Add calorie form */}
             <div className="flex w-full flex-wrap items-center gap-2">
               <Input
                 placeholder="kcal"
@@ -318,6 +380,21 @@ export default function DayDetailPage() {
                 <span className="shrink-0 text-xs font-medium text-success">Feito hoje</span>
               )}
             </div>
+
+            {/* Resume banner */}
+            {hasWorkoutSession && activeSession && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(`/session/workout/${activeSession.templateId}?date=${date}`)}
+                  className="w-full border-pillar-workout/30 text-pillar-workout hover:bg-pillar-workout/10 rounded-xl"
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  Retomar treino em andamento
+                </Button>
+              </motion.div>
+            )}
+
             {data.workoutTemplates.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 Nenhum treino cadastrado.{" "}
@@ -329,11 +406,7 @@ export default function DayDetailPage() {
                   const isSelectedToday = log.workout === t.id;
                   const doneThisWeek = weekWorkoutIds.has(t.id);
                   return (
-                    <button key={t.id} onClick={() => {
-                      const newId = isSelectedToday ? undefined : t.id;
-                      setWorkout(date, newId);
-                      if (newId) celebrate("goal", `Treino "${t.name}" registrado!`);
-                    }}
+                    <button key={t.id} onClick={() => handleWorkoutTap(t.id)}
                       className={cn(
                         "p-3 rounded-xl text-sm font-medium transition-all border active:scale-[0.97]",
                         isSelectedToday
@@ -360,62 +433,61 @@ export default function DayDetailPage() {
         {/* ── CARDIO ── */}
         {(showAll || focusSection === "cardio") && (
           <SectionCard delay={0.16}>
-            <div className="flex w-full items-center gap-2">
-              <Heart className="h-5 w-5 shrink-0 text-pillar-cardio" />
-              <h2 className={sectionHeadingClass}>Cardio</h2>
+            <div className="flex w-full flex-wrap items-center justify-between gap-x-2 gap-y-1">
+              <div className="flex min-w-0 items-center gap-2">
+                <Heart className="h-5 w-5 shrink-0 text-pillar-cardio" />
+                <h2 className={sectionHeadingClass}>Cardio</h2>
+              </div>
+              {log.cardio && data.cardioTemplates.length > 0 && (
+                <span className="shrink-0 text-xs font-medium text-success">Feito hoje</span>
+              )}
             </div>
-            <Button
-              onClick={() => handleCardio(!log.cardio.done)}
-              variant={log.cardio.done ? "pillarCardio" : "outline"}
-              className={cn(
-                "w-full sm:w-auto active:scale-[0.97] transition-all",
-                !log.cardio.done && "rounded-xl border-border hover:bg-muted/70 hover:text-foreground",
-              )}
-            >
-              {log.cardio.done ? (
-                <>
-                  <Check className="w-4 h-4" />
-                  Feito
-                </>
-              ) : (
-                "Feito hoje"
-              )}
-            </Button>
-            {log.cardio.done && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="flex w-full flex-wrap items-center gap-2 pt-1"
-              >
-                <Input
-                  placeholder="Minutos"
-                  type="number"
-                  value={cardioMinutes}
-                  onChange={(e) => {
-                    setCardioMinutes(e.target.value);
-                    setCardio(date, {
-                      done: true,
-                      minutes: parseInt(e.target.value) || undefined,
-                      caloriesBurned: parseInt(cardioCals) || undefined,
-                    });
-                  }}
-                  className="h-10 w-[7rem] shrink-0 bg-secondary border-border sm:w-28"
-                />
-                <Input
-                  placeholder="kcal queimadas"
-                  type="number"
-                  value={cardioCals}
-                  onChange={(e) => {
-                    setCardioCals(e.target.value);
-                    setCardio(date, {
-                      done: true,
-                      minutes: parseInt(cardioMinutes) || undefined,
-                      caloriesBurned: parseInt(e.target.value) || undefined,
-                    });
-                  }}
-                  className="h-10 min-w-0 flex-1 bg-secondary border-border"
-                />
+
+            {/* Resume banner */}
+            {hasCardioSession && activeSession && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(`/session/cardio/${activeSession.templateId}?date=${date}`)}
+                  className="w-full border-pillar-cardio/30 text-pillar-cardio hover:bg-pillar-cardio/10 rounded-xl"
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  Retomar cardio em andamento
+                </Button>
               </motion.div>
+            )}
+
+            {data.cardioTemplates.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nenhum cardio cadastrado.{" "}
+                <button onClick={() => navigate("/cardios")} className="text-primary underline">Cadastrar cardios</button>
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {data.cardioTemplates.map((t) => {
+                  const isSelectedToday = log.cardio === t.id;
+                  const doneThisWeek = weekCardioIds.has(t.id);
+                  return (
+                    <button key={t.id} onClick={() => handleCardioTap(t.id)}
+                      className={cn(
+                        "p-3 rounded-xl text-sm font-medium transition-all border active:scale-[0.97]",
+                        isSelectedToday
+                          ? "border-success bg-success/10 text-success"
+                          : doneThisWeek
+                            ? "border-success/30 bg-success/5 text-muted-foreground"
+                            : "border-border bg-secondary text-muted-foreground hover:border-primary/30",
+                      )}>
+                      <div className="flex items-center gap-1.5 justify-center">
+                        {(isSelectedToday || doneThisWeek) && <Check className="w-3.5 h-3.5 shrink-0" />}
+                        <span className="truncate">{t.name}</span>
+                      </div>
+                      {doneThisWeek && !isSelectedToday && (
+                        <span className="text-[10px] text-success/60 block mt-0.5">feito na semana</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </SectionCard>
         )}
@@ -460,6 +532,33 @@ export default function DayDetailPage() {
           </SectionCard>
         )}
       </div>
+
+      {/* Action dialog: Marcar como feito / Fazer agora */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-center">{dialogTemplateLabel}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 pt-2">
+            <Button
+              variant="outline"
+              onClick={handleMarkDone}
+              className="w-full h-12 rounded-xl active:scale-[0.97]"
+            >
+              <CheckCircle className="w-5 h-5 mr-2" />
+              Marcar como feito
+            </Button>
+            <Button
+              variant="cta"
+              onClick={handleDoNow}
+              className="w-full h-12 rounded-xl active:scale-[0.97]"
+            >
+              <Play className="w-5 h-5 mr-2" />
+              Fazer agora
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

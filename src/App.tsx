@@ -11,6 +11,11 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const SetupPage = lazy(() => import("./pages/SetupPage"));
 const DayDetailPage = lazy(() => import("./pages/DayDetailPage"));
 const WorkoutsPage = lazy(() => import("./pages/WorkoutsPage"));
+const WorkoutDetailPage = lazy(() => import("./pages/WorkoutDetailPage"));
+const WorkoutSessionPage = lazy(() => import("./pages/WorkoutSessionPage"));
+const CardiosPage = lazy(() => import("./pages/CardiosPage"));
+const CardioDetailPage = lazy(() => import("./pages/CardioDetailPage"));
+const CardioSessionPage = lazy(() => import("./pages/CardioSessionPage"));
 const WeeklySummaryPage = lazy(() => import("./pages/WeeklySummaryPage"));
 const BodyCompositionPage = lazy(() => import("./pages/BodyCompositionPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
@@ -42,6 +47,11 @@ const App = () => (
               <Route path="/setup" element={<SetupPage />} />
               <Route path="/day/:date" element={<DayDetailPage />} />
               <Route path="/workouts" element={<WorkoutsPage />} />
+              <Route path="/workouts/:id" element={<WorkoutDetailPage />} />
+              <Route path="/session/workout/:id" element={<WorkoutSessionPage />} />
+              <Route path="/cardios" element={<CardiosPage />} />
+              <Route path="/cardios/:id" element={<CardioDetailPage />} />
+              <Route path="/session/cardio/:id" element={<CardioSessionPage />} />
               <Route path="/weekly" element={<WeeklySummaryPage />} />
               <Route path="/body" element={<BodyCompositionPage />} />
               <Route path="/settings" element={<SettingsPage />} />

@@ -7,11 +7,11 @@ import { Input } from "@/components/ui/input";
 import { SubpageHeader } from "@/components/SubpageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { ActionIconButton } from "@/components/ActionIconButton";
-import { Plus, Trash2, Dumbbell, ChevronRight } from "lucide-react";
+import { Plus, Trash2, Heart, ChevronRight } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
-export default function WorkoutsPage() {
-  const { data, addWorkoutTemplate, removeWorkoutTemplate } = useChallenge();
+export default function CardiosPage() {
+  const { data, addCardioTemplate, removeCardioTemplate } = useChallenge();
   const navigate = useNavigate();
   const [newName, setNewName] = useState("");
 
@@ -21,26 +21,26 @@ export default function WorkoutsPage() {
 
   const handleAdd = () => {
     if (!newName.trim()) return;
-    addWorkoutTemplate({ name: newName.trim(), order: data.workoutTemplates.length, exercises: [] });
+    addCardioTemplate({ name: newName.trim(), order: data.cardioTemplates.length });
     setNewName("");
-    toast.success("Treino adicionado.");
+    toast.success("Cardio adicionado.");
   };
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <SubpageHeader title="Meus Treinos" onBack={() => navigate("/")} />
+      <SubpageHeader title="Meus Cardios" onBack={() => navigate("/")} />
 
       <div className="px-5 space-y-3">
-        {data.workoutTemplates.length === 0 && (
+        {data.cardioTemplates.length === 0 && (
           <EmptyState
-            icon={<Dumbbell className="w-12 h-12" />}
-            title="Nenhum treino cadastrado"
-            description="Adicione seus treinos para poder registrá-los nos dias do desafio."
+            icon={<Heart className="w-12 h-12" />}
+            title="Nenhum cardio cadastrado"
+            description="Adicione seus cardios para poder registrá-los nos dias do desafio."
           />
         )}
 
         <AnimatePresence>
-          {data.workoutTemplates.map((t, i) => (
+          {data.cardioTemplates.map((t, i) => (
             <motion.div
               key={t.id}
               initial={{ opacity: 0, x: -20 }}
@@ -48,27 +48,29 @@ export default function WorkoutsPage() {
               exit={{ opacity: 0, x: 20 }}
               transition={{ delay: i * 0.05 }}
               className="flex items-center gap-3 p-4 rounded-2xl card-elevated border border-border cursor-pointer hover:bg-muted/30 transition-colors"
-              onClick={() => navigate(`/workouts/${t.id}`)}
+              onClick={() => navigate(`/cardios/${t.id}`)}
             >
               <div className="p-2 rounded-xl bg-secondary shrink-0">
-                <Dumbbell className="w-4 h-4 text-pillar-workout" />
+                <Heart className="w-4 h-4 text-pillar-cardio" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-foreground truncate">{t.name}</p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs text-muted-foreground">
-                    {t.exercises.length} exercício{t.exercises.length !== 1 ? "s" : ""}
-                  </span>
-                  {t.focus && (
-                    <span className="text-xs text-muted-foreground truncate">· {t.focus}</span>
+                  {t.intensity && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-pillar-cardio/10 text-pillar-cardio font-medium">
+                      {t.intensity}
+                    </span>
+                  )}
+                  {t.objective && (
+                    <span className="text-xs text-muted-foreground truncate">{t.objective}</span>
                   )}
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
               <ActionIconButton
                 intent="danger"
-                onClick={(e) => { e.stopPropagation(); removeWorkoutTemplate(t.id); }}
-                aria-label={`Remover treino ${t.name}`}
+                onClick={(e) => { e.stopPropagation(); removeCardioTemplate(t.id); }}
+                aria-label={`Remover cardio ${t.name}`}
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </ActionIconButton>
@@ -78,7 +80,7 @@ export default function WorkoutsPage() {
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-2 pt-2">
           <Input
-            placeholder="Nome do treino (ex: Pernas)"
+            placeholder="Nome do cardio (ex: Core A)"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}

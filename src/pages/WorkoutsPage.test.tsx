@@ -1,6 +1,6 @@
 import React from "react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -20,6 +20,7 @@ function renderWorkouts() {
   return renderWithChallengeRouter(
     <Routes>
       <Route path="/workouts" element={<WorkoutsPage />} />
+      <Route path="/workouts/:id" element={<div>Detail</div>} />
     </Routes>,
     { initialEntries: ["/workouts"] },
   );
@@ -30,6 +31,7 @@ function seedStartedChallenge() {
     startDate: "2026-04-01",
     goals: DEFAULT_GOALS,
     workoutTemplates: [],
+    cardioTemplates: [],
     dayLogs: {},
     feedback: { celebratedMilestones: [] },
   });
@@ -55,27 +57,9 @@ describe("WorkoutsPage", () => {
     await user.click(screen.getByRole("button", { name: /Adicionar/i }));
 
     await waitFor(() => {
-      expect(readPersistedChallenge().workoutTemplates).toEqual([
-        { id: "test-uuid-0", name: "Pernas", order: 0 },
-      ]);
-    });
-  });
-
-  it("editar nome inline persiste no localStorage", async () => {
-    const user = userEvent.setup();
-    renderWorkouts();
-    await waitFor(() => expect(localStorage.getItem("fitness-challenge-90")).not.toBeNull());
-
-    await user.type(screen.getByPlaceholderText(/Nome do treino/i), "Costas");
-    await user.click(screen.getByRole("button", { name: /Adicionar/i }));
-    await waitFor(() => screen.getByDisplayValue("Costas"));
-
-    const nameInput = screen.getByDisplayValue("Costas");
-    await user.clear(nameInput);
-    await user.type(nameInput, "Costas B");
-
-    await waitFor(() => {
-      expect(readPersistedChallenge().workoutTemplates[0].name).toBe("Costas B");
+      const tpls = readPersistedChallenge().workoutTemplates;
+      expect(tpls).toHaveLength(1);
+      expect(tpls[0]).toMatchObject({ id: "test-uuid-0", name: "Pernas" });
     });
   });
 
@@ -86,11 +70,9 @@ describe("WorkoutsPage", () => {
 
     await user.type(screen.getByPlaceholderText(/Nome do treino/i), "A");
     await user.click(screen.getByRole("button", { name: /Adicionar/i }));
-    await waitFor(() => screen.getByDisplayValue("A"));
+    await waitFor(() => screen.getByText("A"));
 
-    const row = screen.getByDisplayValue("A").closest(".group");
-    expect(row).toBeTruthy();
-    await user.click(within(row as HTMLElement).getByRole("button"));
+    await user.click(screen.getByRole("button", { name: /Remover treino A/i }));
 
     await waitFor(() => {
       expect(readPersistedChallenge().workoutTemplates).toEqual([]);

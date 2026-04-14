@@ -18,7 +18,7 @@ export function isCalorieGoalMet(log: DayLog, goals: ChallengeGoals): boolean {
 }
 
 /**
- * Check no resumo semanal / revisão: só faz sentido “OK” depois que o dia terminou.
+ * Check no resumo semanal / revisão: só faz sentido "OK" depois que o dia terminou.
  * Mesma faixa 50–100% da meta como teto; hoje e futuros retornam false.
  * Sem meta de calorias (<= 0): não exibir como atingido no resumo (evita falso positivo).
  */
@@ -47,7 +47,13 @@ export function isSleepGoalMet(log: DayLog, goals: ChallengeGoals): boolean {
 }
 
 export function isCardioDoneForDay(log: DayLog): boolean {
-  return log.cardio.done;
+  return Boolean(log.cardio);
+}
+
+/** Sem templates cadastrados, o pilar cardio não exige seleção. */
+export function isCardioPillarMet(log: DayLog, cardioTemplateCount: number): boolean {
+  if (cardioTemplateCount <= 0) return true;
+  return Boolean(log.cardio);
 }
 
 /** Sem templates cadastrados, o pilar treino não exige seleção. */
@@ -56,7 +62,7 @@ export function isWorkoutPillarMet(log: DayLog, workoutTemplateCount: number): b
   return Boolean(log.workout);
 }
 
-/** Ícone na lista “Dia a Dia” do resumo: check, X ou vazio (pendente / N/A). */
+/** Ícone na lista "Dia a Dia" do resumo: check, X ou vazio (pendente / N/A). */
 export type WeekDayPillarIcon = "good" | "bad" | "none";
 
 function sleepHoursProvided(log: DayLog): boolean {
@@ -105,18 +111,25 @@ export function weekSummaryPillarWorkoutIcon(
   return log.workout ? "good" : "bad";
 }
 
-export function weekSummaryPillarCardioIcon(log: DayLog, dayDateStr: string, todayStr: string): WeekDayPillarIcon {
+export function weekSummaryPillarCardioIcon(
+  log: DayLog,
+  cardioTemplateCount: number,
+  dayDateStr: string,
+  todayStr: string,
+): WeekDayPillarIcon {
+  if (cardioTemplateCount <= 0) return "none";
   if (dayDateStr > todayStr) return "none";
   if (dayDateStr === todayStr) {
-    return log.cardio.done ? "good" : "none";
+    return log.cardio ? "good" : "none";
   }
-  return log.cardio.done ? "good" : "bad";
+  return log.cardio ? "good" : "bad";
 }
 
 export function getWeekDayPillarIcons(
   log: DayLog,
   goals: ChallengeGoals,
   workoutTemplateCount: number,
+  cardioTemplateCount: number,
   dayDateStr: string,
   todayStr: string,
 ): Record<"calories" | "sleep" | "workout" | "cardio", WeekDayPillarIcon> {
@@ -124,7 +137,7 @@ export function getWeekDayPillarIcons(
     calories: weekSummaryPillarCaloriesIcon(log, goals, dayDateStr, todayStr),
     sleep: weekSummaryPillarSleepIcon(log, goals, dayDateStr, todayStr),
     workout: weekSummaryPillarWorkoutIcon(log, workoutTemplateCount, dayDateStr, todayStr),
-    cardio: weekSummaryPillarCardioIcon(log, dayDateStr, todayStr),
+    cardio: weekSummaryPillarCardioIcon(log, cardioTemplateCount, dayDateStr, todayStr),
   };
 }
 
@@ -132,12 +145,13 @@ export function isDayFullyComplete(
   log: DayLog,
   goals: ChallengeGoals,
   workoutTemplateCount: number,
+  cardioTemplateCount: number,
 ): boolean {
   return (
     isCalorieGoalMet(log, goals) &&
     isSleepGoalMet(log, goals) &&
     isWorkoutPillarMet(log, workoutTemplateCount) &&
-    isCardioDoneForDay(log)
+    isCardioPillarMet(log, cardioTemplateCount)
   );
 }
 
@@ -166,14 +180,16 @@ export function isDashboardWeeklyWorkoutsOnTrack(
   return weekWorkoutCount >= goals.weeklyWorkouts || Boolean(todayLog.workout);
 }
 
-/** Dashboard — cardios (bloco): verde se meta desligada, bloco completo ou cardio registrado hoje. */
+/** Dashboard — cardios (bloco): verde se meta desligada, sem templates, bloco completo ou cardio registrado hoje. */
 export function isDashboardWeeklyCardiosOnTrack(
   todayLog: DayLog,
   weekCardioCount: number,
   goals: ChallengeGoals,
+  cardioTemplateCount: number,
 ): boolean {
   if (goals.weeklyCardios <= 0) return true;
-  return weekCardioCount >= goals.weeklyCardios || Boolean(todayLog.cardio.done);
+  if (cardioTemplateCount <= 0) return true;
+  return weekCardioCount >= goals.weeklyCardios || Boolean(todayLog.cardio);
 }
 
 export function getWeekStats(
@@ -189,7 +205,7 @@ export function getWeekStats(
     dateStrings.push(dateStr);
     const log = getDayLog(dateStr);
     if (log.workout) weekWorkouts++;
-    if (log.cardio.done) weekCardios++;
+    if (log.cardio) weekCardios++;
   }
   return { weekWorkouts, weekCardios, dateStrings };
 }
@@ -216,7 +232,7 @@ export function getChallengeBlockStats(
     dateStrings.push(dateStr);
     const log = getDayLog(dateStr);
     if (log.workout) weekWorkouts++;
-    if (log.cardio.done) weekCardios++;
+    if (log.cardio) weekCardios++;
   }
   return { weekWorkouts, weekCardios, dateStrings };
 }

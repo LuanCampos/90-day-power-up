@@ -27,7 +27,8 @@ function seedDayDetailFixture() {
   writeRawChallengeJson({
     startDate: "2026-04-01",
     goals: DEFAULT_GOALS,
-    workoutTemplates: [{ id: "tpl-1", name: "Upper", order: 0 }],
+    workoutTemplates: [{ id: "tpl-1", name: "Upper", order: 0, exercises: [] }],
+    cardioTemplates: [{ id: "ct-1", name: "Core A", order: 0 }],
     dayLogs: {},
     feedback: { celebratedMilestones: [] },
   });
@@ -37,6 +38,8 @@ function renderDayDetail() {
   return renderWithChallengeRouter(
     <Routes>
       <Route path="/day/:date" element={<DayDetailPage />} />
+      <Route path="/session/workout/:id" element={<div>Workout Session</div>} />
+      <Route path="/session/cardio/:id" element={<div>Cardio Session</div>} />
     </Routes>,
     { initialEntries: ["/day/2026-04-13"] },
   );
@@ -85,11 +88,11 @@ describe("DayDetailPage", () => {
       startDate: "2026-04-01",
       goals: DEFAULT_GOALS,
       workoutTemplates: [],
+      cardioTemplates: [],
       dayLogs: {
         "2026-04-13": {
           date: "2026-04-13",
           calories: [{ id: "keep-me", amount: 100 }],
-          cardio: { done: false },
         },
       },
       feedback: { celebratedMilestones: [] },
@@ -118,29 +121,29 @@ describe("DayDetailPage", () => {
     });
   });
 
-  it("marcar cardio como feito persiste no localStorage", async () => {
-    const user = userEvent.setup();
-    renderDayDetail();
-    await waitFor(() => expect(readPersistedChallenge().startDate).toBe("2026-04-01"));
-
-    await user.click(screen.getByRole("button", { name: /Feito hoje/i }));
-
-    await waitFor(() => {
-      expect(readPersistedChallenge().dayLogs["2026-04-13"].cardio).toMatchObject({
-        done: true,
-      });
-    });
-  });
-
-  it("selecionar treino pela UI persiste workout id no localStorage", async () => {
+  it("selecionar treino abre dialog e 'Marcar como feito' persiste workout id", async () => {
     const user = userEvent.setup();
     renderDayDetail();
     await waitFor(() => screen.getByRole("button", { name: /Upper/i }));
 
     await user.click(screen.getByRole("button", { name: /Upper/i }));
+    await waitFor(() => screen.getByText(/Marcar como feito/i));
+    await user.click(screen.getByText(/Marcar como feito/i));
 
     await waitFor(() => {
       expect(readPersistedChallenge().dayLogs["2026-04-13"].workout).toBe("tpl-1");
+    });
+  });
+
+  it("cardio sem youtube link marca feito diretamente", async () => {
+    const user = userEvent.setup();
+    renderDayDetail();
+    await waitFor(() => screen.getByRole("button", { name: /Core A/i }));
+
+    await user.click(screen.getByRole("button", { name: /Core A/i }));
+
+    await waitFor(() => {
+      expect(readPersistedChallenge().dayLogs["2026-04-13"].cardio).toBe("ct-1");
     });
   });
   });
