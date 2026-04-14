@@ -9,6 +9,10 @@ import {
   getWeekStats,
   isCalorieGoalMet,
   isCalorieDayReviewOk,
+  isDashboardCaloriesOnTrack,
+  isDashboardSleepOnTrack,
+  isDashboardWeeklyCardiosOnTrack,
+  isDashboardWeeklyWorkoutsOnTrack,
   isDayFullyComplete,
   isSleepGoalMet,
   isWorkoutPillarMet,
@@ -37,6 +41,15 @@ describe("getDailyCaloriesTotal", () => {
       cardio: { done: false },
     };
     expect(getDailyCaloriesTotal(log)).toBe(800);
+  });
+
+  it("coerce valores nao numericos para numero (persistencia legada)", () => {
+    const log = {
+      date: "2026-04-13",
+      calories: [{ id: "1", amount: "600" as unknown as number }, { id: "2", amount: 100 }],
+      cardio: { done: false },
+    } as DayLog;
+    expect(getDailyCaloriesTotal(log)).toBe(700);
   });
 });
 
@@ -77,6 +90,17 @@ describe("isCalorieGoalMet", () => {
     expect(isCalorieGoalMet(high, baseGoals)).toBe(false);
   });
 
+  it("not met when total is strictly above ceiling (inteiro)", () => {
+    const log: DayLog = {
+      ...emptyLog("2026-04-13"),
+      calories: [
+        { id: "1", amount: 1500 },
+        { id: "2", amount: 501 },
+      ],
+    };
+    expect(isCalorieGoalMet(log, baseGoals)).toBe(false);
+  });
+
   it("goal <= 0 treats pillar as N/A", () => {
     const log = emptyLog("2026-04-13");
     expect(isCalorieGoalMet(log, { ...baseGoals, dailyCalories: 0 })).toBe(true);
@@ -112,6 +136,14 @@ describe("isCalorieDayReviewOk", () => {
       calories: [{ id: "1", amount: 2100 }],
     };
     expect(isCalorieDayReviewOk(high, baseGoals, "2026-04-12", "2026-04-13")).toBe(false);
+  });
+
+  it("false when meta de calorias desligada (evita check enganoso no resumo)", () => {
+    const log: DayLog = {
+      ...emptyLog("2026-04-12"),
+      calories: [{ id: "1", amount: 3000 }],
+    };
+    expect(isCalorieDayReviewOk(log, { ...baseGoals, dailyCalories: 0 }, "2026-04-12", "2026-04-13")).toBe(false);
   });
 });
 
@@ -174,6 +206,38 @@ describe("isDayFullyComplete", () => {
       sleepHours: 8,
     };
     expect(isDayFullyComplete(log, baseGoals, 1)).toBe(false);
+  });
+});
+
+describe("Dashboard stat card on-track (verde vs laranja)", () => {
+  it("isDashboardCaloriesOnTrack espelha isCalorieGoalMet", () => {
+    const ok: DayLog = { ...emptyLog("2026-04-13"), calories: [{ id: "1", amount: 1500 }] };
+    expect(isDashboardCaloriesOnTrack(ok, baseGoals)).toBe(true);
+    const low: DayLog = { ...emptyLog("2026-04-13"), calories: [{ id: "1", amount: 100 }] };
+    expect(isDashboardCaloriesOnTrack(low, baseGoals)).toBe(false);
+  });
+
+  it("isDashboardSleepOnTrack espelha isSleepGoalMet", () => {
+    const ok: DayLog = { ...emptyLog("2026-04-13"), sleepHours: 8 };
+    expect(isDashboardSleepOnTrack(ok, baseGoals)).toBe(true);
+    expect(isDashboardSleepOnTrack(emptyLog("2026-04-13"), baseGoals)).toBe(false);
+  });
+
+  it("treinos: verde com meta do bloco batida ou treino hoje", () => {
+    const noToday = emptyLog("2026-04-13");
+    expect(isDashboardWeeklyWorkoutsOnTrack(noToday, 3, baseGoals, 2)).toBe(false);
+    expect(isDashboardWeeklyWorkoutsOnTrack({ ...noToday, workout: "a" }, 3, baseGoals, 2)).toBe(true);
+    expect(isDashboardWeeklyWorkoutsOnTrack(noToday, 4, baseGoals, 2)).toBe(true);
+    expect(isDashboardWeeklyWorkoutsOnTrack(noToday, 0, baseGoals, 0)).toBe(true);
+    expect(isDashboardWeeklyWorkoutsOnTrack(noToday, 0, { ...baseGoals, weeklyWorkouts: 0 }, 2)).toBe(true);
+  });
+
+  it("cardios: verde com meta do bloco batida ou cardio hoje", () => {
+    const noToday = emptyLog("2026-04-13");
+    expect(isDashboardWeeklyCardiosOnTrack(noToday, 2, baseGoals)).toBe(false);
+    expect(isDashboardWeeklyCardiosOnTrack({ ...noToday, cardio: { done: true } }, 2, baseGoals)).toBe(true);
+    expect(isDashboardWeeklyCardiosOnTrack(noToday, 3, baseGoals)).toBe(true);
+    expect(isDashboardWeeklyCardiosOnTrack(noToday, 0, { ...baseGoals, weeklyCardios: 0 })).toBe(true);
   });
 });
 

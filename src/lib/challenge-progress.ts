@@ -2,24 +2,25 @@ import { addDays, format } from "date-fns";
 import type { ChallengeGoals, DayLog } from "@/types/challenge";
 
 export function getDailyCaloriesTotal(log: DayLog): number {
-  return log.calories.reduce((s, c) => s + c.amount, 0);
+  return log.calories.reduce((s, c) => s + (Number(c.amount) || 0), 0);
 }
 
 /**
  * Pilar de calorias no dia atual: meta é teto (deficit). OK = consumo entre 50% e 100% da meta, com registro (> 0).
- * Abaixo de 50% ou acima de 100% não conta como atingido. Meta <= 0 desliga o pilar.
+ * Abaixo de 50% ou acima do teto não conta como atingido. Meta <= 0 desliga o pilar.
  */
 export function isCalorieGoalMet(log: DayLog, goals: ChallengeGoals): boolean {
-  if (goals.dailyCalories <= 0) return true;
+  const ceiling = Number(goals.dailyCalories);
+  if (!Number.isFinite(ceiling) || ceiling <= 0) return true;
   const total = getDailyCaloriesTotal(log);
-  if (total <= 0) return false;
-  const ratio = total / goals.dailyCalories;
-  return ratio >= 0.5 && ratio <= 1;
+  if (!Number.isFinite(total) || total <= 0) return false;
+  return total >= 0.5 * ceiling && total <= ceiling;
 }
 
 /**
  * Check no resumo semanal / revisão: só faz sentido “OK” depois que o dia terminou.
  * Mesma faixa 50–100% da meta como teto; hoje e futuros retornam false.
+ * Sem meta de calorias (<= 0): não exibir como atingido no resumo (evita falso positivo).
  */
 export function isCalorieDayReviewOk(
   log: DayLog,
@@ -27,7 +28,8 @@ export function isCalorieDayReviewOk(
   dayDateStr: string,
   todayStr: string,
 ): boolean {
-  if (goals.dailyCalories <= 0) return true;
+  const ceiling = Number(goals.dailyCalories);
+  if (!Number.isFinite(ceiling) || ceiling <= 0) return false;
   if (dayDateStr >= todayStr) return false;
   return isCalorieGoalMet(log, goals);
 }
@@ -65,6 +67,41 @@ export function isDayFullyComplete(
     isWorkoutPillarMet(log, workoutTemplateCount) &&
     isCardioDoneForDay(log)
   );
+}
+
+/** Dashboard: barra verde quando calorias de hoje estão na faixa ideal (ou meta desligada). */
+export function isDashboardCaloriesOnTrack(log: DayLog, goals: ChallengeGoals): boolean {
+  return isCalorieGoalMet(log, goals);
+}
+
+/** Dashboard: barra verde quando sono de hoje está na faixa ideal (ou meta desligada). */
+export function isDashboardSleepOnTrack(log: DayLog, goals: ChallengeGoals): boolean {
+  return isSleepGoalMet(log, goals);
+}
+
+/**
+ * Dashboard — treinos (bloco): verde se meta semanal desligada, não há templates,
+ * já atingiu os treinos do bloco, ou registrou treino hoje.
+ */
+export function isDashboardWeeklyWorkoutsOnTrack(
+  todayLog: DayLog,
+  weekWorkoutCount: number,
+  goals: ChallengeGoals,
+  workoutTemplateCount: number,
+): boolean {
+  if (goals.weeklyWorkouts <= 0) return true;
+  if (workoutTemplateCount <= 0) return true;
+  return weekWorkoutCount >= goals.weeklyWorkouts || Boolean(todayLog.workout);
+}
+
+/** Dashboard — cardios (bloco): verde se meta desligada, bloco completo ou cardio registrado hoje. */
+export function isDashboardWeeklyCardiosOnTrack(
+  todayLog: DayLog,
+  weekCardioCount: number,
+  goals: ChallengeGoals,
+): boolean {
+  if (goals.weeklyCardios <= 0) return true;
+  return weekCardioCount >= goals.weeklyCardios || Boolean(todayLog.cardio.done);
 }
 
 export function getWeekStats(

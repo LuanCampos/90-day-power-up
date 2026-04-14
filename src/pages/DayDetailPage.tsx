@@ -126,7 +126,6 @@ export default function DayDetailPage() {
 
   const totalCalories = getDailyCaloriesTotal(log);
   const dailyCalGoal = data.goals.dailyCalories;
-  const calRatio = dailyCalGoal > 0 ? totalCalories / dailyCalGoal : 0;
   const caloriesRemaining = dailyCalGoal > 0 ? Math.max(0, dailyCalGoal - totalCalories) : null;
   const caloriesClosedDayOk =
     dailyCalGoal > 0 && date < todayStr && isCalorieDayReviewOk(log, data.goals, date, todayStr);
@@ -214,10 +213,10 @@ export default function DayDetailPage() {
             {caloriesTodayInBand && (
               <p className="text-xs text-muted-foreground">Entre 50% e 100% da meta (o dia ainda não fechou).</p>
             )}
-            {dailyCalGoal > 0 && totalCalories > 0 && calRatio > 1 && (
+            {dailyCalGoal > 0 && totalCalories > dailyCalGoal && (
               <p className="text-xs font-medium text-destructive">Acima da meta diária</p>
             )}
-            {dailyCalGoal > 0 && totalCalories > 0 && calRatio < 0.5 && (
+            {dailyCalGoal > 0 && totalCalories > 0 && totalCalories < 0.5 * dailyCalGoal && (
               <p className="text-xs font-medium text-amber-600 dark:text-amber-500">Abaixo de 50% da meta</p>
             )}
             {dailyCalGoal > 0 && date === todayStr && totalCalories === 0 && (
@@ -233,6 +232,7 @@ export default function DayDetailPage() {
               showPercentage={false}
               successRange={dailyCalGoal > 0 ? { min: 50, max: 100 } : undefined}
               completeHighlight={date < todayStr}
+              warnAbove={dailyCalGoal > 0 ? 100 : undefined}
             />
             <AnimatePresence>
               {log.calories.map((entry) => (
@@ -335,7 +335,7 @@ export default function DayDetailPage() {
               <Moon className="w-5 h-5 text-primary" />
               <h2 className="font-display font-semibold text-foreground">Sono</h2>
               {isSleepGoalMet(log, data.goals) && data.goals.dailySleepHours > 0 && (
-                <span className="ml-auto text-xs font-medium text-success">Meta atingida</span>
+                <span className="ml-auto text-xs font-medium text-success">Sono no alvo</span>
               )}
             </div>
             <div className="flex gap-2">

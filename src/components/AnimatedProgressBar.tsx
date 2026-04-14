@@ -11,6 +11,8 @@ interface AnimatedProgressBarProps {
   successRange?: { min: number; max: number };
   /** Quando false, nunca aplica estilo de “completo” (ex.: calorias no dia atual antes de fechar o dia). */
   completeHighlight?: boolean;
+  /** Valor bruto acima do qual a barra vira alerta e nunca é “completa” (ex.: 100 = % acima da meta de calorias). */
+  warnAbove?: number;
 }
 
 export function AnimatedProgressBar({
@@ -22,15 +24,19 @@ export function AnimatedProgressBar({
   showPercentage = true,
   successRange,
   completeHighlight = true,
+  warnAbove,
 }: AnimatedProgressBarProps) {
   const raw = value;
   const clamped = Math.min(100, Math.max(0, value));
+  const isOverBudget = warnAbove != null && raw > warnAbove;
   const isComplete =
-    completeHighlight === false
+    isOverBudget
       ? false
-      : successRange
-        ? raw >= successRange.min && raw <= successRange.max
-        : clamped >= 100;
+      : completeHighlight === false
+        ? false
+        : successRange
+          ? raw >= successRange.min && raw <= successRange.max
+          : clamped >= 100;
 
   const heights = { sm: "h-2", md: "h-3", lg: "h-4" };
   const barColors = {
@@ -56,7 +62,7 @@ export function AnimatedProgressBar({
       )}
       <div className={`w-full ${heights[size]} rounded-full bg-secondary overflow-hidden`}>
         <motion.div
-          className={`h-full rounded-full ${barColors[variant]} ${isComplete ? "glow-success" : ""}`}
+          className={`h-full rounded-full ${isOverBudget ? "bg-destructive" : barColors[variant]} ${isComplete ? "glow-success" : ""}`}
           initial={{ width: 0 }}
           animate={{ width: `${clamped}%` }}
           transition={{ duration: 0.8, ease: "easeOut" }}

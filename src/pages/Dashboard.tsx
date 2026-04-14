@@ -11,7 +11,12 @@ import {
   challengeWeekMilestoneId,
   CHALLENGE_COMPLETE_MILESTONE_ID,
   getChallengeBlockStats,
+  getDailyCaloriesTotal,
   hasCelebratedMilestone,
+  isDashboardCaloriesOnTrack,
+  isDashboardSleepOnTrack,
+  isDashboardWeeklyCardiosOnTrack,
+  isDashboardWeeklyWorkoutsOnTrack,
   isDayFullyComplete,
 } from "@/lib/challenge-progress";
 import { Settings, Dumbbell, ChevronRight, Moon, Flame, Heart, Zap, Calendar, CheckCircle2 } from "lucide-react";
@@ -84,7 +89,7 @@ export default function Dashboard() {
       ? getChallengeBlockStats(data.startDate, blockRange.firstDay, blockRange.lastDay, getDayLog)
       : { weekWorkouts: 0, weekCardios: 0 };
 
-  const totalCalories = todayLog.calories.reduce((s, c) => s + c.amount, 0);
+  const totalCalories = getDailyCaloriesTotal(todayLog);
   const dailyCalGoal = data.goals.dailyCalories;
   const caloriesRemaining = dailyCalGoal > 0 ? Math.max(0, dailyCalGoal - totalCalories) : null;
   const calProgress = dailyCalGoal > 0 ? (totalCalories / dailyCalGoal) * 100 : 0;
@@ -98,6 +103,16 @@ export default function Dashboard() {
 
   const todayComplete = isDayFullyComplete(todayLog, data.goals, data.workoutTemplates.length);
 
+  const caloriesOnTrack = isDashboardCaloriesOnTrack(todayLog, data.goals);
+  const sleepOnTrack = isDashboardSleepOnTrack(todayLog, data.goals);
+  const workoutOnTrack = isDashboardWeeklyWorkoutsOnTrack(
+    todayLog,
+    weekWorkouts,
+    data.goals,
+    data.workoutTemplates.length,
+  );
+  const cardioOnTrack = isDashboardWeeklyCardiosOnTrack(todayLog, weekCardios, data.goals);
+
   const statCards = [
     {
       icon: <Flame className="w-5 h-5" />,
@@ -105,17 +120,18 @@ export default function Dashboard() {
       value: caloriesRemaining !== null ? `${caloriesRemaining}` : `${totalCalories}`,
       sub: caloriesRemaining !== null ? "restantes" : "kcal",
       progress: calProgress,
-      variant: "energy" as const,
+      variant: (caloriesOnTrack ? "success" : "energy") as const,
       path: `/day/${todayStr}?section=calories`,
       completeHighlight: false,
+      warnAbove: dailyCalGoal > 0 ? 100 : undefined,
     },
-       {
+    {
       icon: <Moon className="w-5 h-5" />,
       label: "Sono Hoje",
       value: todayLog.sleepHours ? `${todayLog.sleepHours}h` : "—",
       sub: `/ ${data.goals.dailySleepHours}h`,
       progress: sleepProgress,
-      variant: "success" as const,
+      variant: (sleepOnTrack ? "success" : "energy") as const,
       path: `/day/${todayStr}?section=sleep`,
       sleepSuccessRange: data.goals.dailySleepHours > 0 ? { min: 80, max: 140 } : undefined,
     },
@@ -125,7 +141,7 @@ export default function Dashboard() {
       value: `${weekWorkouts}`,
       sub: `/ ${data.goals.weeklyWorkouts}`,
       progress: workoutProgress,
-      variant: "success" as const,
+      variant: (workoutOnTrack ? "success" : "energy") as const,
       path: `/day/${todayStr}?section=workout`,
     },
     {
@@ -134,7 +150,7 @@ export default function Dashboard() {
       value: `${weekCardios}`,
       sub: `/ ${data.goals.weeklyCardios}`,
       progress: cardioProgress,
-      variant: "energy" as const,
+      variant: (cardioOnTrack ? "success" : "energy") as const,
       path: `/day/${todayStr}?section=cardio`,
     },
   ];
@@ -206,6 +222,7 @@ export default function Dashboard() {
               showPercentage={false}
               successRange={"sleepSuccessRange" in card ? card.sleepSuccessRange : undefined}
               completeHighlight={"completeHighlight" in card ? card.completeHighlight : true}
+              warnAbove={"warnAbove" in card ? card.warnAbove : undefined}
             />
           </motion.button>
         ))}

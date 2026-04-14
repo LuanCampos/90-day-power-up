@@ -19,11 +19,25 @@ const defaultData: ChallengeData = {
   feedback: { celebratedMilestones: [] },
 };
 
+function goalNumber(value: unknown, fallback: number): number {
+  if (value === undefined || value === null) return fallback;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 function normalizeLoadedChallengeData(parsed: Partial<ChallengeData>): ChallengeData {
   const celebrated = parsed.feedback?.celebratedMilestones;
+  const pg = (parsed.goals && typeof parsed.goals === "object" ? parsed.goals : {}) as Partial<ChallengeGoals>;
   return {
     startDate: parsed.startDate ?? null,
-    goals: { ...defaultGoals, ...parsed.goals },
+    goals: {
+      ...defaultGoals,
+      ...pg,
+      dailyCalories: goalNumber(pg.dailyCalories, defaultGoals.dailyCalories),
+      dailySleepHours: goalNumber(pg.dailySleepHours, defaultGoals.dailySleepHours),
+      weeklyCardios: goalNumber(pg.weeklyCardios, defaultGoals.weeklyCardios),
+      weeklyWorkouts: goalNumber(pg.weeklyWorkouts, defaultGoals.weeklyWorkouts),
+    },
     workoutTemplates: Array.isArray(parsed.workoutTemplates) ? parsed.workoutTemplates : [],
     dayLogs: parsed.dayLogs && typeof parsed.dayLogs === "object" ? parsed.dayLogs : {},
     feedback: {

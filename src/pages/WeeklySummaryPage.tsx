@@ -10,6 +10,7 @@ import {
   challengeBlockDayRange,
   defaultChallengeViewBlockFirstDay,
   getChallengeBlockStats,
+  getDailyCaloriesTotal,
   isCalorieDayReviewOk,
   isSleepGoalMet,
 } from "@/lib/challenge-progress";
@@ -34,12 +35,15 @@ export default function WeeklySummaryPage() {
     const d = new Date(dateStr + "T00:00:00");
     const log = getDayLog(dateStr);
     const dayNum = getDayNumber(dateStr);
-    const totalCal = log.calories.reduce((s, c) => s + c.amount, 0);
+    const totalCal = getDailyCaloriesTotal(log);
     const calMet = isCalorieDayReviewOk(log, data.goals, dateStr, todayStr);
     const sleepMet = isSleepGoalMet(log, data.goals);
     const workoutTemplate = log.workout ? data.workoutTemplates.find(t => t.id === log.workout) : null;
 
-    return { d, dateStr, dayNum, log, totalCal, calMet, sleepMet, workoutTemplate };
+    const calOverCeiling =
+      data.goals.dailyCalories > 0 && totalCal > data.goals.dailyCalories;
+
+    return { d, dateStr, dayNum, log, totalCal, calMet, calOverCeiling, sleepMet, workoutTemplate };
   });
 
   const prevBlockFirst = blockFirstDay - 7;
@@ -162,7 +166,13 @@ export default function WeeklySummaryPage() {
             <div className="flex items-center gap-4 text-xs">
               <div className="flex items-center gap-1">
                 <Flame className="w-3.5 h-3.5 text-energy" />
-                <span className={day.calMet ? "text-success" : "text-muted-foreground"}>{day.totalCal} kcal</span>
+                <span
+                  className={
+                    day.calMet ? "text-success" : day.calOverCeiling ? "text-destructive" : "text-muted-foreground"
+                  }
+                >
+                  {day.totalCal} kcal
+                </span>
                 <StatusIcon met={day.calMet} />
               </div>
               <div className="flex items-center gap-1">
