@@ -1,0 +1,28 @@
+---
+description: Não deixar código morto após refatorações
+alwaysApply: true
+---
+
+# Sem código morto
+
+Ao remover, renomear ou alterar uma propriedade, tipo, variável ou branch de lógica, **rastrear todos os pontos que a consumiam** e removê-los ou atualizá-los na mesma mudança.
+
+Código "inofensivo" que nunca executa (condições sempre falsas, imports não usados, funções sem chamadores) **não é aceitável** — ele confunde leitores futuros e esconde intenção.
+
+## Checklist rápido antes de concluir a alteração
+
+1. **Buscar usos** — procurar no projeto por referências ao símbolo removido/renomeado.
+2. **Avaliar branches condicionais** — se uma condição depende de algo que não existe mais, remover o branch inteiro (não deixar `if (false)` implícito).
+3. **Limpar imports e tipos** — remover imports que ficaram órfãos e propriedades opcionais de tipos que ninguém mais preenche.
+
+## Exemplo
+
+```typescript
+// ❌ RUIM — propriedade `warnAbove` foi removida do objeto,
+//    mas a condição que a testava continua no código.
+if ("warnAbove" in card) {
+  // nunca entra aqui → código morto
+}
+
+// ✅ BOM — remover o branch junto com a propriedade.
+```

@@ -148,8 +148,7 @@ export default function Dashboard() {
       progress: sleepProgress,
       variant: sleepOnTrack ? "success" as const : "energy" as const,
       path: `/day/${todayStr}?section=sleep`,
-      sleepSuccessRange: data.goals.dailySleepHours > 0 ? { min: 80, max: 140 } : undefined,
-      sleepWarnAbove: data.goals.dailySleepHours > 0 ? 140 : undefined,
+      sleepSuccessRange: data.goals.dailySleepHours > 0 ? { min: 90, max: Infinity } : undefined,
     },
     {
       icon: <Dumbbell className="w-5 h-5 text-pillar-workout" />,
@@ -278,9 +277,7 @@ export default function Dashboard() {
               showPercentage={false}
               successRange={"sleepSuccessRange" in card ? card.sleepSuccessRange : undefined}
               completeHighlight={"completeHighlight" in card ? card.completeHighlight : true}
-              warnAbove={
-                "warnAbove" in card ? card.warnAbove : "sleepWarnAbove" in card ? card.sleepWarnAbove : undefined
-              }
+              warnAbove={"warnAbove" in card ? card.warnAbove : undefined}
               warnOverStyle={"calWarnOrange" in card && card.calWarnOrange ? "energy" : "destructive"}
             />
           </motion.button>

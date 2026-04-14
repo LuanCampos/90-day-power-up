@@ -22,6 +22,7 @@ import {
   isCalorieDayReviewOk,
   isDayFullyComplete,
   isDashboardSleepOnTrack,
+  isSleepDayReviewOk,
   isSleepGoalMet,
 } from "@/lib/challenge-progress";
 import { SubpageHeader } from "@/components/SubpageHeader";
@@ -156,6 +157,12 @@ export default function DayDetailPage() {
   const caloriesHeadlineSuffix = dailyCalGoal <= 0 ? "kcal" : caloriesOverBudget ? "excedentes" : "restantes";
   const caloriesClosedDayOk =
     dailyCalGoal > 0 && date < todayStr && isCalorieDayReviewOk(log, data.goals, date, todayStr);
+
+  const dailySleepGoal = data.goals.dailySleepHours;
+  const sleepHours = log.sleepHours ?? 0;
+  const sleepRatio = dailySleepGoal > 0 && sleepHours > 0 ? sleepHours / dailySleepGoal : 0;
+  const sleepClosedDayOk =
+    dailySleepGoal > 0 && date < todayStr && isSleepDayReviewOk(log, data.goals, date, todayStr);
 
   const handleSleep = () => {
     const hours = parseFloat(sleepInput);
@@ -528,9 +535,6 @@ export default function DayDetailPage() {
                 <Moon className="h-5 w-5 shrink-0 text-pillar-sleep" />
                 <h2 className={sectionHeadingClass}>Sono</h2>
               </div>
-              {isSleepGoalMet(log, data.goals) && data.goals.dailySleepHours > 0 && (
-                <span className="shrink-0 text-xs font-medium text-success">Sono no alvo</span>
-              )}
             </div>
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
               <Input
@@ -546,15 +550,28 @@ export default function DayDetailPage() {
                 Salvar
               </Button>
             </div>
-            {log.sleepHours && data.goals.dailySleepHours > 0 && (
+
+            {sleepClosedDayOk && (
+              <p className="text-xs font-medium text-success">No alvo (≥ 90% da meta)</p>
+            )}
+            {dailySleepGoal > 0 && sleepHours > 0 && sleepRatio < 0.9 && (
+              <p className="text-xs font-medium text-amber-600 dark:text-amber-500">Abaixo de 90% da meta</p>
+            )}
+            {dailySleepGoal > 0 && date === todayStr && sleepHours === 0 && (
+              <p className="text-xs text-muted-foreground">Registre as horas de sono do dia.</p>
+            )}
+            {dailySleepGoal > 0 && sleepHours > 0 && (
+              <p className="text-xs text-muted-foreground">{sleepHours}h / {dailySleepGoal}h dormidas</p>
+            )}
+
+            {log.sleepHours && dailySleepGoal > 0 && (
               <AnimatedProgressBar
-                value={(log.sleepHours / data.goals.dailySleepHours) * 100}
+                value={(log.sleepHours / dailySleepGoal) * 100}
                 label={`${log.sleepHours}h`}
-                sublabel={`/ ${data.goals.dailySleepHours}h`}
+                sublabel={`/ ${dailySleepGoal}h`}
                 variant={isDashboardSleepOnTrack(log, data.goals) ? "success" : "energy"}
                 size="sm"
-                successRange={{ min: 80, max: 140 }}
-                warnAbove={140}
+                successRange={{ min: 90, max: Infinity }}
               />
             )}
           </SectionCard>

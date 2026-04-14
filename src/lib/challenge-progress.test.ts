@@ -245,20 +245,18 @@ describe("getWeekDayPillarIcons (Dia a Dia)", () => {
 });
 
 describe("isSleepGoalMet", () => {
-  it("met when logged hours between 80% and 140% of goal (inclusive)", () => {
-    const at80: DayLog = { ...emptyLog("2026-04-13"), sleepHours: 6.4 };
-    expect(isSleepGoalMet(at80, baseGoals)).toBe(true);
+  it("met when logged hours >= 90% of goal (no upper limit)", () => {
+    const at90: DayLog = { ...emptyLog("2026-04-13"), sleepHours: 7.2 };
+    expect(isSleepGoalMet(at90, baseGoals)).toBe(true);
     const at100: DayLog = { ...emptyLog("2026-04-13"), sleepHours: 8 };
     expect(isSleepGoalMet(at100, baseGoals)).toBe(true);
-    const at140: DayLog = { ...emptyLog("2026-04-13"), sleepHours: 11.2 };
-    expect(isSleepGoalMet(at140, baseGoals)).toBe(true);
+    const wellAbove: DayLog = { ...emptyLog("2026-04-13"), sleepHours: 14 };
+    expect(isSleepGoalMet(wellAbove, baseGoals)).toBe(true);
   });
 
-  it("not met below 80% or above 140% or when not logged", () => {
-    const low: DayLog = { ...emptyLog("2026-04-13"), sleepHours: 6.3 };
+  it("not met below 90% or when not logged", () => {
+    const low: DayLog = { ...emptyLog("2026-04-13"), sleepHours: 7.1 };
     expect(isSleepGoalMet(low, baseGoals)).toBe(false);
-    const high: DayLog = { ...emptyLog("2026-04-13"), sleepHours: 11.3 };
-    expect(isSleepGoalMet(high, baseGoals)).toBe(false);
     const empty = emptyLog("2026-04-13");
     expect(isSleepGoalMet(empty, baseGoals)).toBe(false);
   });

@@ -35,7 +35,22 @@ export function isCalorieDayReviewOk(
 }
 
 /**
- * Sono: precisa estar registrado no app (> 0 h) e entre 80% e 140% da meta (inclusive).
+ * Check no resumo / revisão: "OK" para dias passados com sono ≥ 90% da meta.
+ * Meta <= 0 → não exibir como atingido. Hoje e futuros → false.
+ */
+export function isSleepDayReviewOk(
+  log: DayLog,
+  goals: ChallengeGoals,
+  dayDateStr: string,
+  todayStr: string,
+): boolean {
+  if (goals.dailySleepHours <= 0) return false;
+  if (dayDateStr >= todayStr) return false;
+  return isSleepGoalMet(log, goals);
+}
+
+/**
+ * Sono: precisa estar registrado no app (> 0 h) e ≥ 90% da meta.
  * Meta <= 0 desliga o pilar.
  */
 export function isSleepGoalMet(log: DayLog, goals: ChallengeGoals): boolean {
@@ -43,7 +58,7 @@ export function isSleepGoalMet(log: DayLog, goals: ChallengeGoals): boolean {
   const hours = log.sleepHours;
   if (hours == null || hours <= 0) return false;
   const ratio = hours / goals.dailySleepHours;
-  return ratio >= 0.8 && ratio <= 1.4;
+  return ratio >= 0.9;
 }
 
 export function isCardioDoneForDay(log: DayLog): boolean {
