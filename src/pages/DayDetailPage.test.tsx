@@ -141,12 +141,14 @@ describe("DayDetailPage", () => {
     expect(screen.getByText(/Sugestão do dia/i)).toBeInTheDocument();
   });
 
-  it("cardio sem youtube link marca feito diretamente", async () => {
+  it("cardio sem youtube link abre dialog e 'Marcar como feito' persiste cardio id", async () => {
     const user = userEvent.setup();
     renderDayDetail();
     await waitFor(() => screen.getByRole("button", { name: /Core A/i }));
 
     await user.click(screen.getByRole("button", { name: /Core A/i }));
+    await waitFor(() => screen.getByText(/Marcar como feito/i));
+    await user.click(screen.getByText(/Marcar como feito/i));
 
     await waitFor(() => {
       expect(readPersistedChallenge().dayLogs["2026-04-13"].cardio).toBe("ct-1");

@@ -77,7 +77,6 @@ export default function CardioSessionPage() {
             <Heart className="w-5 h-5" />
             <span className="text-xs font-medium uppercase tracking-wider">Cardio</span>
           </div>
-          <h2 className="text-xl font-display font-bold text-foreground">{template.name}</h2>
           {template.objective && (
             <p className="text-sm text-muted-foreground mt-1">{template.objective}</p>
           )}

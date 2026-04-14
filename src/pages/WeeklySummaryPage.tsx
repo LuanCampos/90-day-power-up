@@ -176,28 +176,28 @@ export default function WeeklySummaryPage() {
               <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
             </div>
 
-            {/* Pillar indicators - compact grid */}
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-              <div className="flex items-center gap-1.5">
+            {/* Pillar indicators - single row */}
+            <div className="flex items-center gap-3 text-xs">
+              <div className="flex items-center gap-1 shrink-0">
                 <Flame className="w-3.5 h-3.5 shrink-0 text-pillar-calories" />
                 <span className="text-muted-foreground tabular-nums">{day.totalCal} kcal</span>
                 <PillarIcon state={day.pillarIcons.calories} />
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1 shrink-0">
                 <Moon className="w-3.5 h-3.5 shrink-0 text-pillar-sleep" />
                 <span className="text-muted-foreground tabular-nums">
                   {day.log.sleepHours ? `${day.log.sleepHours}h` : "—"}
                 </span>
                 <PillarIcon state={day.pillarIcons.sleep} />
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1 min-w-0">
                 <Dumbbell className="w-3.5 h-3.5 shrink-0 text-pillar-workout" />
                 <span className="min-w-0 truncate text-muted-foreground">
                   {day.workoutTemplate ? day.workoutTemplate.name : "—"}
                 </span>
                 <PillarIcon state={day.pillarIcons.workout} />
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1 min-w-0">
                 <Heart className="w-3.5 h-3.5 shrink-0 text-pillar-cardio" />
                 <span className="min-w-0 truncate text-muted-foreground">{day.cardioTemplate ? day.cardioTemplate.name : "—"}</span>
                 <PillarIcon state={day.pillarIcons.cardio} />

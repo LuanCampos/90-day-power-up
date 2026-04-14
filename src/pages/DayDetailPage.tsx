@@ -185,14 +185,8 @@ export default function DayDetailPage() {
       setCardio(date, undefined);
       return;
     }
-    const template = data.cardioTemplates.find(t => t.id === templateId);
-    if (template?.youtubeLink) {
-      setDialogTarget({ type: "cardio", templateId });
-      setDialogOpen(true);
-    } else {
-      setCardio(date, templateId);
-      celebrate("goal", "Cardio registrado!");
-    }
+    setDialogTarget({ type: "cardio", templateId });
+    setDialogOpen(true);
   };
 
   const handleMarkDone = () => {
@@ -582,14 +576,19 @@ export default function DayDetailPage() {
               <CheckCircle className="w-5 h-5 mr-2" />
               Marcar como feito
             </Button>
-            <Button
-              variant="cta"
-              onClick={handleDoNow}
-              className="w-full h-12 rounded-xl active:scale-[0.97]"
-            >
-              <Play className="w-5 h-5 mr-2" />
-              Fazer agora
-            </Button>
+            {dialogTarget && (
+              dialogTarget.type === "workout" ||
+              data.cardioTemplates.find(c => c.id === dialogTarget.templateId)?.youtubeLink
+            ) && (
+              <Button
+                variant="cta"
+                onClick={handleDoNow}
+                className="w-full h-12 rounded-xl active:scale-[0.97]"
+              >
+                <Play className="w-5 h-5 mr-2" />
+                Fazer agora
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
