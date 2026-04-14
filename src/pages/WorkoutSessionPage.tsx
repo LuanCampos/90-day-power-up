@@ -3,6 +3,7 @@ import { useChallenge } from "@/contexts/ChallengeContext";
 import { useParams, useNavigate, useSearchParams, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useCelebration } from "@/components/CelebrationOverlay";
 import { AnimatedProgressBar } from "@/components/AnimatedProgressBar";
 import { SubpageHeader } from "@/components/SubpageHeader";
@@ -14,7 +15,7 @@ export default function WorkoutSessionPage() {
   const [searchParams] = useSearchParams();
   const dateParam = searchParams.get("date") || "";
   const navigate = useNavigate();
-  const { data, setWorkout, startSession, updateSession, clearSession } = useChallenge();
+  const { data, setWorkout, saveExerciseWeights, startSession, updateSession, clearSession } = useChallenge();
   const { celebrate, overlay } = useCelebration();
 
   const template = data.workoutTemplates.find(t => t.id === id);
@@ -25,14 +26,22 @@ export default function WorkoutSessionPage() {
   useEffect(() => {
     if (!template || !dateParam || isResuming) return;
     const progress: Record<string, boolean[]> = {};
+    const weights: Record<string, number> = {};
     for (const ex of template.exercises) {
       progress[ex.id] = Array(ex.sets).fill(false);
+      if ((ex.modality ?? "dumbbell") === "dumbbell") {
+        const logs = data.exerciseWeightLogs?.[ex.id];
+        if (logs && logs.length > 0) {
+          weights[ex.id] = logs[logs.length - 1].weight;
+        }
+      }
     }
     startSession({
       type: "workout",
       templateId: template.id,
       date: dateParam,
       exerciseProgress: progress,
+      exerciseWeights: weights,
       currentExerciseIndex: 0,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -42,6 +51,7 @@ export default function WorkoutSessionPage() {
 
   const currentIndex = activeSession?.currentExerciseIndex ?? 0;
   const exerciseProgress = activeSession?.exerciseProgress ?? {};
+  const exerciseWeights = activeSession?.exerciseWeights ?? {};
 
   const exercises = useMemo(() => template?.exercises ?? [], [template?.exercises]);
   const currentExercise = exercises[currentIndex];
@@ -65,6 +75,8 @@ export default function WorkoutSessionPage() {
   const allCurrentSetsDone = currentSets.length > 0 && currentSets.every(Boolean);
   const isLastExercise = currentIndex === exercises.length - 1;
   const allDone = completedSets === totalSets;
+  const isDumbbell = (currentExercise?.modality ?? "dumbbell") === "dumbbell";
+  const currentWeight = exerciseWeights[currentExercise?.id] ?? "";
 
   const toggleSet = (setIndex: number) => {
     if (!currentExercise) return;
@@ -75,6 +87,18 @@ export default function WorkoutSessionPage() {
     });
   };
 
+  const setWeight = (value: string) => {
+    if (!currentExercise) return;
+    const num = parseFloat(value);
+    const updated = { ...exerciseWeights };
+    if (value === "" || isNaN(num)) {
+      delete updated[currentExercise.id];
+    } else {
+      updated[currentExercise.id] = num;
+    }
+    updateSession({ exerciseWeights: updated });
+  };
+
   const goTo = (index: number) => {
     if (index >= 0 && index < exercises.length) {
       updateSession({ currentExerciseIndex: index });
@@ -82,6 +106,9 @@ export default function WorkoutSessionPage() {
   };
 
   const handleComplete = () => {
+    if (Object.keys(exerciseWeights).length > 0) {
+      saveExerciseWeights(dateParam, exerciseWeights);
+    }
     setWorkout(dateParam, template.id);
     clearSession();
     celebrate("day", `Treino "${template.name}" concluído!`);
@@ -127,7 +154,11 @@ export default function WorkoutSessionPage() {
           >
             <div className="text-center space-y-1">
               <div className="inline-flex items-center gap-2 text-pillar-workout">
-                <Dumbbell className="w-5 h-5" />
+                {isDumbbell ? (
+                  <Dumbbell className="w-5 h-5" />
+                ) : (
+                  <span className="text-lg">🤸</span>
+                )}
                 <span className="text-xs font-medium uppercase tracking-wider">Exercício {currentIndex + 1}</span>
               </div>
               <h2 className="text-xl font-display font-bold text-foreground">{currentExercise.name}</h2>
@@ -141,6 +172,23 @@ export default function WorkoutSessionPage() {
                 </p>
               )}
             </div>
+
+            {/* Weight input for dumbbell exercises */}
+            {isDumbbell && (
+              <div className="flex items-center justify-center gap-2 pt-1">
+                <span className="text-lg">🏋️</span>
+                <Input
+                  type="number"
+                  value={currentWeight}
+                  onChange={e => setWeight(e.target.value)}
+                  placeholder="0"
+                  className="w-20 h-9 text-center bg-secondary border-border font-semibold tabular-nums"
+                  min={0}
+                  step={0.5}
+                />
+                <span className="text-sm font-medium text-muted-foreground">kg</span>
+              </div>
+            )}
 
             {/* Set checkmarks */}
             <div className="flex items-center justify-center gap-3 pt-4">

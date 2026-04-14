@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import {
   ChallengeData, DayLog, CalorieEntry, WorkoutTemplate, CardioTemplate,
   ChallengeGoals, BodyCompositionEntry, ActiveSession, WorkoutExercise,
-  DailyScheduleEntry,
+  DailyScheduleEntry, ExerciseModality, ExerciseWeightEntry,
 } from "@/types/challenge";
 import { format } from "date-fns";
 
@@ -12,8 +12,11 @@ const STORAGE_KEY = "fitness-challenge-90";
 let _seqId = 0;
 function seqId(prefix: string) { return `${prefix}-${++_seqId}`; }
 
-function exercise(name: string, sets: number, reps: string, targetMuscles: string): WorkoutExercise {
-  return { id: seqId("ex"), name, sets, reps, targetMuscles };
+function exercise(
+  name: string, sets: number, reps: string, targetMuscles: string,
+  modality: ExerciseModality = "dumbbell",
+): WorkoutExercise {
+  return { id: seqId("ex"), name, sets, reps, targetMuscles, modality };
 }
 
 // ── default workout templates ───────────────────────────────────────────────
@@ -28,7 +31,7 @@ const defaultWorkoutTemplates: WorkoutTemplate[] = [
       exercise("Supino com halteres", 3, "8-12", "Peitoral, tríceps, ombro anterior"),
       exercise("Remada curvada com halteres", 3, "8-12", "Costas médias, dorsal, bíceps"),
       exercise("Elevação lateral", 3, "12-15", "Deltoide lateral"),
-      exercise("Flexões", 2, "até próximo da falha", "Peitoral, tríceps, ombro anterior"),
+      exercise("Flexões", 2, "até próximo da falha", "Peitoral, tríceps, ombro anterior", "bodyweight"),
       exercise("Superset: Rosca alternada + Tríceps francês", 2, "10-12 cada", "Bíceps + tríceps"),
     ],
   },
@@ -56,8 +59,8 @@ const defaultWorkoutTemplates: WorkoutTemplate[] = [
       exercise("Agachamento goblet com pausa", 3, "10-12", "Quadríceps, glúteos, core"),
       exercise("Levantamento terra romeno com halteres", 3, "8-12", "Posteriores, glúteos"),
       exercise("Afundo reverso com halteres", 3, "10-12 por perna", "Glúteos, quadríceps, adutores"),
-      exercise("Agachamento isométrico na parede", 2, "30-45 s", "Quadríceps"),
-      exercise("Elevação de panturrilha em pé", 3, "15-20", "Panturrilhas"),
+      exercise("Agachamento isométrico na parede", 2, "30-45 s", "Quadríceps", "bodyweight"),
+      exercise("Elevação de panturrilha em pé", 3, "15-20", "Panturrilhas", "bodyweight"),
     ],
   },
   {
@@ -70,8 +73,8 @@ const defaultWorkoutTemplates: WorkoutTemplate[] = [
       exercise("Agachamento búlgaro com halteres", 3, "10-12 por perna", "Glúteos, quadríceps"),
       exercise("Hip thrust no chão com halter e pausa", 3, "12-15", "Glúteos, posteriores"),
       exercise("Stiff unilateral com halter", 3, "10-12 por perna", "Posteriores, glúteos, estabilidade"),
-      exercise("Ponte de glúteo unilateral", 2, "12-15 por perna", "Glúteos"),
-      exercise("Elevação de panturrilha unilateral", 3, "15-20 por perna", "Panturrilhas"),
+      exercise("Ponte de glúteo unilateral", 2, "12-15 por perna", "Glúteos", "bodyweight"),
+      exercise("Elevação de panturrilha unilateral", 3, "15-20 por perna", "Panturrilhas", "bodyweight"),
     ],
   },
 ];
@@ -167,6 +170,9 @@ function normalizeLoadedChallengeData(parsed: Partial<ChallengeData>): Challenge
     weeklySchedule: Array.isArray(parsed.weeklySchedule) && parsed.weeklySchedule.length === 7
       ? parsed.weeklySchedule
       : defaultWeeklySchedule,
+    exerciseWeightLogs: parsed.exerciseWeightLogs && typeof parsed.exerciseWeightLogs === "object"
+      ? parsed.exerciseWeightLogs
+      : undefined,
   };
 }
 
@@ -208,6 +214,7 @@ interface ChallengeContextType {
   removeBodyComposition: (week: number) => void;
   resetChallenge: () => void;
   addCelebratedMilestone: (milestoneId: string) => void;
+  saveExerciseWeights: (date: string, weights: Record<string, number>) => void;
   startSession: (session: ActiveSession) => void;
   updateSession: (updates: Partial<ActiveSession>) => void;
   clearSession: () => void;
@@ -358,6 +365,19 @@ export function ChallengeProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const saveExerciseWeights = useCallback((date: string, weights: Record<string, number>) => {
+    setData(prev => {
+      const logs = { ...(prev.exerciseWeightLogs ?? {}) };
+      for (const [exId, weight] of Object.entries(weights)) {
+        if (weight > 0) {
+          const existing = logs[exId] ?? [];
+          logs[exId] = [...existing, { date, weight }];
+        }
+      }
+      return { ...prev, exerciseWeightLogs: logs };
+    });
+  }, []);
+
   const startSession = useCallback((session: ActiveSession) => {
     setData(prev => ({ ...prev, activeSession: session }));
   }, []);
@@ -384,7 +404,7 @@ export function ChallengeProvider({ children }: { children: React.ReactNode }) {
       addCardioTemplate, updateCardioTemplate, removeCardioTemplate,
       getDayNumber, setBodyComposition, removeBodyComposition,
       resetChallenge, addCelebratedMilestone,
-      startSession, updateSession, clearSession,
+      saveExerciseWeights, startSession, updateSession, clearSession,
     }}>
       {children}
     </ChallengeContext.Provider>

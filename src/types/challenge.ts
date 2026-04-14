@@ -1,9 +1,17 @@
+export type ExerciseModality = "bodyweight" | "dumbbell";
+
 export interface WorkoutExercise {
   id: string;
   name: string;
   sets: number;
   reps: string;
   targetMuscles: string;
+  modality?: ExerciseModality;
+}
+
+export interface ExerciseWeightEntry {
+  date: string;
+  weight: number;
 }
 
 export interface WorkoutTemplate {
@@ -30,6 +38,7 @@ export interface ActiveSession {
   templateId: string;
   date: string;
   exerciseProgress: Record<string, boolean[]>;
+  exerciseWeights?: Record<string, number>;
   currentExerciseIndex: number;
 }
 
@@ -84,4 +93,5 @@ export interface ChallengeData {
   bodyComposition?: BodyCompositionEntry[];
   activeSession?: ActiveSession;
   weeklySchedule?: DailyScheduleEntry[];
+  exerciseWeightLogs?: Record<string, ExerciseWeightEntry[]>;
 }
