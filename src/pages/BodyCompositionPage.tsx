@@ -5,6 +5,9 @@ import { BodyCompositionEntry } from "@/types/challenge";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { SubpageHeader } from "@/components/SubpageHeader";
+import { SectionCard } from "@/components/SectionCard";
+import { EmptyState } from "@/components/EmptyState";
+import { ActionIconButton } from "@/components/ActionIconButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -66,14 +69,12 @@ function weekFullLabel(week: number): string {
   return week === 0 ? "Baseline" : `Semana ${week}`;
 }
 
-// --- Delta summary cards ---
-
 interface DeltaInfo {
   key: MetricKey;
   baseline: number;
   latest: number;
   delta: number;
-  positive: boolean; // whether delta direction is "good"
+  positive: boolean;
 }
 
 function computeDeltas(entries: BodyCompositionEntry[]): DeltaInfo[] {
@@ -102,8 +103,6 @@ function formatDelta(delta: number, unit: string): string {
   return `${sign}${formatted}${unit ? ` ${unit}` : ""}`;
 }
 
-// --- Chart data builder ---
-
 function buildChartData(entries: BodyCompositionEntry[]) {
   return [...entries]
     .sort((a, b) => a.week - b.week)
@@ -115,8 +114,6 @@ function buildChartData(entries: BodyCompositionEntry[]) {
       visceralFat: e.visceralFat ?? null,
     }));
 }
-
-// --- Form state ---
 
 interface FormState {
   week: number;
@@ -146,8 +143,6 @@ function parseOptionalNumber(val: string): number | undefined {
   const n = parseFloat(trimmed);
   return Number.isFinite(n) ? n : undefined;
 }
-
-// --- Main page ---
 
 export default function BodyCompositionPage() {
   const { data, setBodyComposition, removeBodyComposition, getDayNumber } = useChallenge();
@@ -179,7 +174,6 @@ export default function BodyCompositionPage() {
   }
 
   function openAdd() {
-    // Pre-select the week matching the current day; fall back to first empty slot.
     const preferred = currentTargetWeek();
     const week = !entryByWeek.has(preferred) ? preferred : findFirstEmptyWeek();
     setForm(emptyForm(week));
@@ -305,7 +299,7 @@ export default function BodyCompositionPage() {
                       <>
                         <div className="h-14 mt-2">
                           <ResponsiveContainer width="100%" height="100%">
-                              <AreaChart data={metricData} margin={{ top: 14, right: 8, bottom: 0, left: 8 }}>
+                            <AreaChart data={metricData} margin={{ top: 14, right: 8, bottom: 0, left: 8 }}>
                               <defs>
                                 <linearGradient id={`grad-${key}`} x1="0" y1="0" x2="0" y2="1">
                                   <stop offset="0%" stopColor={METRIC_COLORS[key]} stopOpacity={0.3} />
@@ -348,22 +342,18 @@ export default function BodyCompositionPage() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className={sectionHeadingClass}>Registros</h2>
-            <Button variant="cta" size="sm" onClick={openAdd} className="rounded-xl hover:opacity-95">
+            <Button variant="cta" size="sm" onClick={openAdd} className="rounded-xl active:scale-[0.97]">
               <Plus className="w-4 h-4 mr-1" />
               Adicionar
             </Button>
           </div>
 
           {sortedEntries.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-12 text-muted-foreground"
-            >
-              <Scale className="w-12 h-12 mx-auto mb-3 opacity-40" />
-              <p className="text-sm">Nenhuma medida registrada ainda.</p>
-              <p className="text-xs mt-1">Adicione seu baseline para começar a acompanhar.</p>
-            </motion.div>
+            <EmptyState
+              icon={<Scale className="w-12 h-12" />}
+              title="Nenhuma medida registrada"
+              description="Adicione seu baseline para começar a acompanhar sua evolução."
+            />
           )}
 
           {sortedEntries.map((entry, i) => (
@@ -381,23 +371,13 @@ export default function BodyCompositionPage() {
                   </span>
                   <span className="text-xs text-muted-foreground ml-2">{entry.date}</span>
                 </div>
-                <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                    onClick={() => openEdit(entry)}
-                  >
+                <div className="flex gap-0.5">
+                  <ActionIconButton onClick={() => openEdit(entry)} aria-label="Editar medida">
                     <Pencil className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-destructive"
-                    onClick={() => handleDelete(entry.week)}
-                  >
+                  </ActionIconButton>
+                  <ActionIconButton intent="danger" onClick={() => handleDelete(entry.week)} aria-label="Remover medida">
                     <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
+                  </ActionIconButton>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
@@ -482,7 +462,7 @@ export default function BodyCompositionPage() {
               );
             })}
 
-            <Button variant="cta" onClick={handleSave} className="w-full h-12">
+            <Button variant="cta" onClick={handleSave} className="w-full h-12 active:scale-[0.97]">
               {editingWeek != null ? "Atualizar" : "Salvar"}
             </Button>
           </div>

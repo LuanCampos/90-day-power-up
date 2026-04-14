@@ -4,6 +4,8 @@ import { useNavigate, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SubpageHeader } from "@/components/SubpageHeader";
+import { SectionCard } from "@/components/SectionCard";
+import { sectionHeadingClass } from "@/lib/page-ui";
 import { Download, RotateCcw } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "@/components/ui/sonner";
@@ -43,14 +45,10 @@ export default function SettingsPage() {
       <SubpageHeader title="Configurações" onBack={() => navigate("/")} />
 
       <div className="px-5 space-y-5">
+        <h2 className={sectionHeadingClass}>Metas</h2>
+
         {fields.map((field, i) => (
-          <motion.div
-            key={field.key}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className="p-4 rounded-2xl card-elevated border border-border space-y-2"
-          >
+          <SectionCard key={field.key} delay={i * 0.05} className="space-y-2">
             <label className="text-sm font-medium text-foreground">{field.label}</label>
             <div className="flex items-center gap-2">
               <Input
@@ -61,20 +59,15 @@ export default function SettingsPage() {
               />
               <span className="text-sm text-muted-foreground whitespace-nowrap">{field.suffix}</span>
             </div>
-          </motion.div>
+          </SectionCard>
         ))}
 
-        <Button variant="cta" onClick={handleSave} className="w-full h-12 mt-6">
+        <Button variant="cta" onClick={handleSave} className="w-full h-12 mt-2 active:scale-[0.97]">
           Salvar Metas
         </Button>
 
         {!isStandalone && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: fields.length * 0.05 + 0.05 }}
-            className="p-4 rounded-2xl card-elevated border border-border mt-6"
-          >
+          <SectionCard delay={fields.length * 0.05 + 0.05} className="mt-6">
             <div className="flex gap-4 items-start">
               <img
                 src={`${import.meta.env.BASE_URL}brand/pwa-icon.svg`}
@@ -99,7 +92,7 @@ export default function SettingsPage() {
                   <Button
                     type="button"
                     variant="secondary"
-                    className="w-full sm:w-auto rounded-xl hover:bg-secondary/70"
+                    className="w-full sm:w-auto rounded-xl hover:bg-secondary/70 active:scale-[0.97]"
                     onClick={async () => {
                       const outcome = await promptInstall();
                       if (outcome === "unavailable") {
@@ -113,7 +106,7 @@ export default function SettingsPage() {
                 )}
               </div>
             </div>
-          </motion.div>
+          </SectionCard>
         )}
 
         <div className="pt-8 border-t border-border mt-8">
@@ -121,27 +114,31 @@ export default function SettingsPage() {
             <Button
               variant="outline"
               onClick={() => setShowReset(true)}
-              className="w-full rounded-xl border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              className="w-full rounded-xl border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive active:scale-[0.97]"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
               Resetar Desafio
             </Button>
           ) : (
-            <div className="space-y-3">
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-3"
+            >
               <p className="text-sm text-destructive text-center">Tem certeza? Todos os dados serão apagados.</p>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
                   onClick={() => setShowReset(false)}
-                  className="flex-1 rounded-xl hover:bg-muted/70 hover:text-foreground"
+                  className="flex-1 rounded-xl hover:bg-muted/70 hover:text-foreground active:scale-[0.97]"
                 >
                   Cancelar
                 </Button>
-                <Button variant="destructive" onClick={handleReset} className="flex-1 rounded-xl">
+                <Button variant="destructive" onClick={handleReset} className="flex-1 rounded-xl active:scale-[0.97]">
                   Confirmar
                 </Button>
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
       </div>

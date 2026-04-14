@@ -184,10 +184,14 @@ export default function Dashboard() {
               {format(today, "d MMM", { locale: ptBR })}
             </p>
             {todayComplete && (
-              <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-success/40 bg-success/10 px-3 py-1 text-xs font-medium text-success">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-success/40 bg-success/10 px-3 py-1 text-xs font-medium text-success"
+              >
                 <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                 Hoje completo
-              </div>
+              </motion.div>
             )}
           </div>
           <Button
@@ -225,7 +229,7 @@ export default function Dashboard() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             onClick={() => navigate("/body")}
-            className="w-full flex items-start gap-4 p-5 rounded-2xl border-2 border-blue-400/40 bg-blue-400/5 hover:bg-blue-400/10 transition-colors text-left"
+            className="w-full flex items-start gap-4 p-5 rounded-2xl border-2 border-blue-400/40 bg-blue-400/5 hover:bg-blue-400/10 active:scale-[0.98] transition-all text-left"
           >
             <div className="p-3 rounded-xl bg-blue-400/15 shrink-0">
               <Scale className="w-6 h-6 text-blue-400" />
@@ -253,7 +257,7 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 * (i + 1) }}
             onClick={() => navigate(card.path)}
-            className="p-4 rounded-2xl card-elevated border border-border text-left hover:border-primary/30 transition-colors"
+            className="p-4 rounded-2xl card-elevated border border-border text-left hover:border-primary/30 active:scale-[0.97] transition-all"
           >
             <div className="flex items-center gap-2 mb-2 text-muted-foreground">
               {card.icon}
@@ -298,7 +302,7 @@ export default function Dashboard() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 + i * 0.1 }}
             onClick={() => navigate(action.path)}
-            className="w-full flex items-center gap-4 p-4 rounded-2xl card-elevated border border-border hover:border-primary/30 transition-colors group"
+            className="w-full flex items-center gap-4 p-4 rounded-2xl card-elevated border border-border hover:border-primary/30 active:scale-[0.98] transition-all group"
           >
             <div className="p-2.5 rounded-xl bg-secondary group-hover:bg-muted/50 transition-colors">
               {action.icon}
