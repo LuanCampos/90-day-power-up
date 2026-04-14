@@ -4,91 +4,99 @@
  *
  * Each entry has 1-2 images: position 0 (start) and optionally position 1 (end).
  * Images sourced from free-exercise-db (Public Domain) and wger.de (CC-BY-SA).
+ *
+ * Paths are relative to public/ — resolved at runtime via `import.meta.env.BASE_URL`
+ * so GitHub Pages (base = /<repo>/) works correctly.
  */
 
 type ImagePair = [start: string, end?: string];
 
+function img(relativePath: string): string {
+  const base = import.meta.env.BASE_URL ?? "/";
+  return `${base}exercises/${relativePath}`;
+}
+
 const IMAGE_MAP: Record<string, ImagePair> = {
   "Supino com halteres": [
-    "/exercises/supino-com-halteres/0.jpg",
-    "/exercises/supino-com-halteres/1.jpg",
+    img("supino-com-halteres/0.jpg"),
+    img("supino-com-halteres/1.jpg"),
   ],
   "Remada curvada com halteres": [
-    "/exercises/remada-curvada-com-halteres/0.jpg",
-    "/exercises/remada-curvada-com-halteres/1.jpg",
+    img("remada-curvada-com-halteres/0.jpg"),
+    img("remada-curvada-com-halteres/1.jpg"),
   ],
   "Elevação lateral": [
-    "/exercises/elevacao-lateral/0.jpg",
-    "/exercises/elevacao-lateral/1.jpg",
+    img("elevacao-lateral/0.jpg"),
+    img("elevacao-lateral/1.jpg"),
   ],
   "Flexões": [
-    "/exercises/flexoes/0.jpg",
-    "/exercises/flexoes/1.jpg",
+    img("flexoes/0.jpg"),
+    img("flexoes/1.jpg"),
   ],
   "Rosca alternada": [
-    "/exercises/rosca-alternada/0.jpg",
-    "/exercises/rosca-alternada/1.jpg",
+    img("rosca-alternada/0.jpg"),
+    img("rosca-alternada/1.jpg"),
   ],
   "Tríceps francês": [
-    "/exercises/triceps-frances/0.jpg",
-    "/exercises/triceps-frances/1.jpg",
+    img("triceps-frances/0.jpg"),
+    img("triceps-frances/1.jpg"),
   ],
   "Desenvolvimento com halteres": [
-    "/exercises/desenvolvimento-com-halteres/0.jpg",
-    "/exercises/desenvolvimento-com-halteres/1.jpg",
+    img("desenvolvimento-com-halteres/0.jpg"),
+    img("desenvolvimento-com-halteres/1.jpg"),
   ],
   "Remada unilateral com halter": [
-    "/exercises/remada-unilateral-com-halter/0.jpg",
-    "/exercises/remada-unilateral-com-halter/1.jpg",
+    img("remada-unilateral-com-halter/0.jpg"),
+    img("remada-unilateral-com-halter/1.jpg"),
   ],
   "Pullover com halter": [
-    "/exercises/pullover-com-halter/0.jpg",
-    "/exercises/pullover-com-halter/1.jpg",
+    img("pullover-com-halter/0.jpg"),
+    img("pullover-com-halter/1.jpg"),
   ],
   "Crucifixo inverso": [
-    "/exercises/crucifixo-inverso/0.jpg",
-    "/exercises/crucifixo-inverso/1.jpg",
+    img("crucifixo-inverso/0.jpg"),
+    img("crucifixo-inverso/1.jpg"),
   ],
   "Rosca martelo": [
-    "/exercises/rosca-martelo/0.jpg",
-    "/exercises/rosca-martelo/1.jpg",
+    img("rosca-martelo/0.jpg"),
+    img("rosca-martelo/1.jpg"),
   ],
   "Agachamento goblet com pausa": [
-    "/exercises/agachamento-goblet-com-pausa/0.jpg",
-    "/exercises/agachamento-goblet-com-pausa/1.jpg",
+    img("agachamento-goblet-com-pausa/0.jpg"),
+    img("agachamento-goblet-com-pausa/1.jpg"),
   ],
   "Levantamento terra romeno com halteres": [
-    "/exercises/levantamento-terra-romeno-com-halteres/0.jpg",
-    "/exercises/levantamento-terra-romeno-com-halteres/1.jpg",
+    img("levantamento-terra-romeno-com-halteres/0.jpg"),
+    img("levantamento-terra-romeno-com-halteres/1.jpg"),
   ],
   "Afundo reverso com halteres": [
-    "/exercises/afundo-reverso-com-halteres/0.jpg",
-    "/exercises/afundo-reverso-com-halteres/1.jpg",
+    img("afundo-reverso-com-halteres/0.jpg"),
+    img("afundo-reverso-com-halteres/1.jpg"),
   ],
   "Agachamento isométrico na parede": [
-    "/exercises/agachamento-isometrico-na-parede/0.png",
+    img("agachamento-isometrico-na-parede/0.png"),
   ],
   "Elevação de panturrilha em pé": [
-    "/exercises/elevacao-de-panturrilha-em-pe/0.jpg",
-    "/exercises/elevacao-de-panturrilha-em-pe/1.jpg",
+    img("elevacao-de-panturrilha-em-pe/0.jpg"),
+    img("elevacao-de-panturrilha-em-pe/1.jpg"),
   ],
   "Agachamento búlgaro com halteres": [
-    "/exercises/agachamento-bulgaro-com-halteres/0.jpg",
-    "/exercises/agachamento-bulgaro-com-halteres/1.jpg",
+    img("agachamento-bulgaro-com-halteres/0.jpg"),
+    img("agachamento-bulgaro-com-halteres/1.jpg"),
   ],
   "Hip thrust no chão com halter e pausa": [
-    "/exercises/hip-thrust-no-chao-com-halter-e-pausa/0.jpg",
-    "/exercises/hip-thrust-no-chao-com-halter-e-pausa/1.jpg",
+    img("hip-thrust-no-chao-com-halter-e-pausa/0.jpg"),
+    img("hip-thrust-no-chao-com-halter-e-pausa/1.jpg"),
   ],
   "Stiff unilateral com halter": [
-    "/exercises/stiff-unilateral-com-halter/0.png",
+    img("stiff-unilateral-com-halter/0.png"),
   ],
   "Ponte de glúteo unilateral": [
-    "/exercises/ponte-de-gluteo-unilateral/0.jpg",
-    "/exercises/ponte-de-gluteo-unilateral/1.jpg",
+    img("ponte-de-gluteo-unilateral/0.jpg"),
+    img("ponte-de-gluteo-unilateral/1.jpg"),
   ],
   "Elevação de panturrilha unilateral": [
-    "/exercises/elevacao-de-panturrilha-unilateral/0.jpeg",
+    img("elevacao-de-panturrilha-unilateral/0.jpeg"),
   ],
 };
 
