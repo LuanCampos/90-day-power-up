@@ -18,20 +18,8 @@ async function pngBufferForSize(size) {
 }
 
 async function maskable512() {
-  const inner = 410;
-  const pad = Math.floor((512 - inner) / 2);
-  const innerBuf = await sharp(svg).resize(inner, inner).png().toBuffer();
-  return sharp({
-    create: {
-      width: 512,
-      height: 512,
-      channels: 4,
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
-    },
-  })
-    .composite([{ input: innerBuf, left: pad, top: pad }])
-    .png()
-    .toBuffer();
+  // Mesmo artefato 512×512 opaco que pwa-512 — padding transparente no maskable gerava halo claro no Android.
+  return pngBufferForSize(512);
 }
 
 async function main() {
