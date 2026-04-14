@@ -400,20 +400,22 @@ export default function BodyCompositionPage() {
                   </Button>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
                 {ALL_METRICS.map((key) => {
                   const val = entry[key];
                   const MetricIcon = METRIC_ICONS[key];
                   return (
-                    <div key={key} className="flex items-center gap-2">
+                    <div key={key} className="flex items-center gap-1.5 min-w-0">
                       <MetricIcon
                         className="w-3.5 h-3.5 shrink-0"
                         style={{ color: METRIC_COLORS[key] }}
                       />
-                      <span className="text-muted-foreground">{METRIC_LABELS[key]}:</span>
-                      <span className="font-medium text-foreground ml-auto tabular-nums">
-                        {val != null ? `${val}${METRIC_UNITS[key] ? ` ${METRIC_UNITS[key]}` : ""}` : "—"}
-                      </span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-[10px] text-muted-foreground leading-tight truncate">{METRIC_LABELS[key]}</span>
+                        <span className="font-medium text-foreground tabular-nums text-sm leading-tight">
+                          {val != null ? `${val}${METRIC_UNITS[key] ? ` ${METRIC_UNITS[key]}` : ""}` : "—"}
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
