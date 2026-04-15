@@ -159,8 +159,8 @@ function normalizeLoadedChallengeData(parsed: Partial<ChallengeData>): Challenge
       weeklyCardios: goalNumber(pg.weeklyCardios, defaultGoals.weeklyCardios),
       weeklyWorkouts: goalNumber(pg.weeklyWorkouts, defaultGoals.weeklyWorkouts),
     },
-    workoutTemplates: resolveTemplates(parsed.workoutTemplates, defaultWorkoutTemplates, workoutsHaveNewShape),
-    cardioTemplates: resolveTemplates(parsed.cardioTemplates, defaultCardioTemplates, () => true),
+    workoutTemplates: resolveTemplates(parsed.workoutTemplates as WorkoutTemplate[] | undefined, defaultWorkoutTemplates, workoutsHaveNewShape),
+    cardioTemplates: resolveTemplates(parsed.cardioTemplates as CardioTemplate[] | undefined, defaultCardioTemplates, () => true),
     dayLogs: parsed.dayLogs && typeof parsed.dayLogs === "object" ? parsed.dayLogs : {},
     feedback: {
       celebratedMilestones: Array.isArray(celebrated) ? [...celebrated] : [],
