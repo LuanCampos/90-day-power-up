@@ -17,6 +17,7 @@ import {
   getChallengeBlockStats,
   getDailyCaloriesTotal,
   getDailySuggestion,
+  getPillarSuggestion,
   hasCelebratedMilestone,
   isCalorieGoalMet,
   isCalorieDayReviewOk,
@@ -32,7 +33,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Plus, Trash2, Flame, Dumbbell, Heart, Moon, Check, ChevronLeft, ChevronRight,
+  Plus, Trash2, Flame, Dumbbell, HeartPulse, Moon, Check, ChevronLeft, ChevronRight,
   Play, CheckCircle, CalendarClock,
 } from "lucide-react";
 
@@ -123,23 +124,72 @@ export default function DayDetailPage() {
   const canGoPrev = prevDayNum !== null;
   const canGoNext = nextDayNum !== null;
 
-  // Weekly template usage tracking
-  const weekWorkoutIds = new Set<string>();
-  const weekCardioIds = new Set<string>();
-  if (dayNum != null && data.startDate) {
-    const { firstDay, lastDay } = challengeBlockDayRange(dayNum);
-    const base = new Date(data.startDate + "T00:00:00");
-    for (let dNum = firstDay; dNum <= lastDay; dNum++) {
-      const d = format(addDays(base, dNum - 1), "yyyy-MM-dd");
-      if (d === date) continue;
-      const dayLog = getDayLog(d);
-      if (dayLog.workout) weekWorkoutIds.add(dayLog.workout);
-      if (dayLog.cardio) weekCardioIds.add(dayLog.cardio);
-    }
-  }
+  // Weekly template usage tracking (block stats excluding today for "feito na semana" badges)
+  const blockRange = dayNum != null ? challengeBlockDayRange(dayNum) : null;
+  const blockStats =
+    blockRange != null && data.startDate
+      ? getChallengeBlockStats(data.startDate, blockRange.firstDay, blockRange.lastDay, getDayLog)
+      : null;
+  const weekWorkoutIds = new Set(blockStats?.weekWorkoutIds ?? []);
+  const weekCardioIds = new Set(blockStats?.weekCardioIds ?? []);
+  if (log.workout) weekWorkoutIds.delete(log.workout);
+  if (log.cardio) weekCardioIds.delete(log.cardio);
 
   // Daily suggestion based on 7-day cycle
   const suggestion = dayNum != null ? getDailySuggestion(dayNum, data.weeklySchedule) : null;
+
+  // Pillar suggestions (shared logic with Dashboard — includes catch-up on rest days)
+  const blockDoneIdsForWorkout = new Set(blockStats?.weekWorkoutIds ?? []);
+  const blockDoneIdsForCardio = new Set(blockStats?.weekCardioIds ?? []);
+  if (log.workout) blockDoneIdsForWorkout.delete(log.workout);
+  if (log.cardio) blockDoneIdsForCardio.delete(log.cardio);
+  const workoutSuggestion = dayNum != null && data.weeklySchedule
+    ? getPillarSuggestion({
+        pillar: "workout",
+        dayNumber: dayNum,
+        todayLog: log,
+        schedule: data.weeklySchedule,
+        blockDoneIds: blockDoneIdsForWorkout,
+        templates: data.workoutTemplates,
+      })
+    : null;
+  const cardioSuggestion = dayNum != null && data.weeklySchedule
+    ? getPillarSuggestion({
+        pillar: "cardio",
+        dayNumber: dayNum,
+        todayLog: log,
+        schedule: data.weeklySchedule,
+        blockDoneIds: blockDoneIdsForCardio,
+        templates: data.cardioTemplates,
+      })
+    : null;
+
+  const workoutSuggestedIds = new Set<string>();
+  const cardioSuggestedIds = new Set<string>();
+  let workoutSuggestionIsCatchup = false;
+  let cardioSuggestionIsCatchup = false;
+  if (workoutSuggestion) {
+    if (workoutSuggestion.status === "suggested" && workoutSuggestion.templateId) {
+      workoutSuggestedIds.add(workoutSuggestion.templateId);
+    } else if (workoutSuggestion.status === "catchup-single" && workoutSuggestion.templateId) {
+      workoutSuggestedIds.add(workoutSuggestion.templateId);
+      workoutSuggestionIsCatchup = true;
+    } else if (workoutSuggestion.status === "catchup-multi" && workoutSuggestion.pendingIds) {
+      for (const id of workoutSuggestion.pendingIds) workoutSuggestedIds.add(id);
+      workoutSuggestionIsCatchup = true;
+    }
+  }
+  if (cardioSuggestion) {
+    if (cardioSuggestion.status === "suggested" && cardioSuggestion.templateId) {
+      cardioSuggestedIds.add(cardioSuggestion.templateId);
+    } else if (cardioSuggestion.status === "catchup-single" && cardioSuggestion.templateId) {
+      cardioSuggestedIds.add(cardioSuggestion.templateId);
+      cardioSuggestionIsCatchup = true;
+    } else if (cardioSuggestion.status === "catchup-multi" && cardioSuggestion.pendingIds) {
+      for (const id of cardioSuggestion.pendingIds) cardioSuggestedIds.add(id);
+      cardioSuggestionIsCatchup = true;
+    }
+  }
 
   const handleAddCalorie = () => {
     const amount = parseInt(calAmount);
@@ -272,22 +322,46 @@ export default function DayDetailPage() {
       </div>
 
       {/* Suggestion banner */}
-      {suggestion && showAll && (
-        <div className="px-5 pb-2">
-          <div className={cn(
-            "flex items-center gap-3 rounded-xl px-4 py-3 text-sm",
-            suggestion.workoutId
-              ? "bg-primary/10 text-primary"
-              : "bg-muted text-muted-foreground",
-          )}>
-            <CalendarClock className="h-4 w-4 shrink-0" />
-            <div>
-              <span className="font-medium">Sugestão do dia:</span>{" "}
-              <span>{suggestion.label}</span>
+      {showAll && (() => {
+        const hasCatchup = workoutSuggestionIsCatchup || cardioSuggestionIsCatchup;
+        if (hasCatchup) {
+          const parts: string[] = [];
+          if (workoutSuggestion?.status === "catchup-single") parts.push(workoutSuggestion.templateName ?? "Treino");
+          else if (workoutSuggestion?.status === "catchup-multi") parts.push(`${workoutSuggestion.pendingCount} treinos`);
+          if (cardioSuggestion?.status === "catchup-single") parts.push(cardioSuggestion.templateName ?? "Cardio");
+          else if (cardioSuggestion?.status === "catchup-multi") parts.push(`${cardioSuggestion.pendingCount} cardios`);
+          return (
+            <div className="px-5 pb-2">
+              <div className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm bg-primary/10 text-primary">
+                <CalendarClock className="h-4 w-4 shrink-0" />
+                <div>
+                  <span className="font-medium">Pendente da semana:</span>{" "}
+                  <span>{parts.join(" + ")}</span>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          );
+        }
+        if (suggestion) {
+          return (
+            <div className="px-5 pb-2">
+              <div className={cn(
+                "flex items-center gap-3 rounded-xl px-4 py-3 text-sm",
+                suggestion.workoutId
+                  ? "bg-primary/10 text-primary"
+                  : "bg-muted text-muted-foreground",
+              )}>
+                <CalendarClock className="h-4 w-4 shrink-0" />
+                <div>
+                  <span className="font-medium">Sugestão do dia:</span>{" "}
+                  <span>{suggestion.label}</span>
+                </div>
+              </div>
+            </div>
+          );
+        }
+        return null;
+      })()}
 
       <div className="px-5 space-y-5">
         {/* ── CALORIAS ── */}
@@ -428,7 +502,7 @@ export default function DayDetailPage() {
                 {data.workoutTemplates.map((t) => {
                   const isSelectedToday = log.workout === t.id;
                   const doneThisWeek = weekWorkoutIds.has(t.id);
-                  const isSuggested = !isSelectedToday && !doneThisWeek && suggestion?.workoutId === t.id;
+                  const isSuggested = !isSelectedToday && !doneThisWeek && workoutSuggestedIds.has(t.id);
                   return (
                     <button key={t.id} onClick={() => handleWorkoutTap(t.id)}
                       className={cn(
@@ -449,7 +523,9 @@ export default function DayDetailPage() {
                         <span className="text-[10px] text-success/60 block mt-0.5">feito na semana</span>
                       )}
                       {isSuggested && (
-                        <span className="text-[10px] text-primary/70 block mt-0.5">sugerido</span>
+                        <span className="text-[10px] text-primary/70 block mt-0.5">
+                          {workoutSuggestionIsCatchup ? "pendente" : "sugerido"}
+                        </span>
                       )}
                     </button>
                   );
@@ -464,7 +540,7 @@ export default function DayDetailPage() {
           <SectionCard delay={0.16}>
             <div className="flex w-full flex-wrap items-center justify-between gap-x-2 gap-y-1">
               <div className="flex min-w-0 items-center gap-2">
-                <Heart className="h-5 w-5 shrink-0 text-pillar-cardio" />
+                <HeartPulse className="h-5 w-5 shrink-0 text-pillar-cardio" />
                 <h2 className={sectionHeadingClass}>Cardio</h2>
               </div>
               {log.cardio && data.cardioTemplates.length > 0 && (
@@ -496,7 +572,7 @@ export default function DayDetailPage() {
                 {data.cardioTemplates.map((t) => {
                   const isSelectedToday = log.cardio === t.id;
                   const doneThisWeek = weekCardioIds.has(t.id);
-                  const isSuggested = !isSelectedToday && !doneThisWeek && suggestion?.cardioId === t.id;
+                  const isSuggested = !isSelectedToday && !doneThisWeek && cardioSuggestedIds.has(t.id);
                   return (
                     <button key={t.id} onClick={() => handleCardioTap(t.id)}
                       className={cn(
@@ -517,7 +593,9 @@ export default function DayDetailPage() {
                         <span className="text-[10px] text-success/60 block mt-0.5">feito na semana</span>
                       )}
                       {isSuggested && (
-                        <span className="text-[10px] text-primary/70 block mt-0.5">sugerido</span>
+                        <span className="text-[10px] text-primary/70 block mt-0.5">
+                          {cardioSuggestionIsCatchup ? "pendente" : "sugerido"}
+                        </span>
                       )}
                     </button>
                   );

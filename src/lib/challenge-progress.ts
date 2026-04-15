@@ -237,19 +237,33 @@ export function getChallengeBlockStats(
   firstDay: number,
   lastDay: number,
   getDayLog: (date: string) => DayLog,
-): { weekWorkouts: number; weekCardios: number; dateStrings: string[] } {
+): {
+  weekWorkouts: number;
+  weekCardios: number;
+  weekWorkoutIds: Set<string>;
+  weekCardioIds: Set<string>;
+  dateStrings: string[];
+} {
   const base = new Date(challengeStartDate + "T00:00:00");
   const dateStrings: string[] = [];
+  const weekWorkoutIds = new Set<string>();
+  const weekCardioIds = new Set<string>();
   let weekWorkouts = 0;
   let weekCardios = 0;
   for (let d = firstDay; d <= lastDay; d++) {
     const dateStr = format(addDays(base, d - 1), "yyyy-MM-dd");
     dateStrings.push(dateStr);
     const log = getDayLog(dateStr);
-    if (log.workout) weekWorkouts++;
-    if (log.cardio) weekCardios++;
+    if (log.workout) {
+      weekWorkouts++;
+      weekWorkoutIds.add(log.workout);
+    }
+    if (log.cardio) {
+      weekCardios++;
+      weekCardioIds.add(log.cardio);
+    }
   }
-  return { weekWorkouts, weekCardios, dateStrings };
+  return { weekWorkouts, weekCardios, weekWorkoutIds, weekCardioIds, dateStrings };
 }
 
 /** Primeiro dia do bloco (1, 8, 15, …) ao abrir o resumo: hoje no desafio, ou bloco 1 antes, ou último bloco depois do dia 90. */
@@ -298,4 +312,83 @@ export function getDailySuggestion(
   if (!schedule || schedule.length !== 7) return null;
   const index = (dayNumber - 1) % 7;
   return schedule[index] ?? null;
+}
+
+// ── Pillar suggestion (dashboard badges & day-detail catch-up) ──────────────
+
+export type PillarSuggestionStatus =
+  | "suggested"
+  | "done"
+  | "rest"
+  | "catchup-single"
+  | "catchup-multi";
+
+export interface PillarSuggestion {
+  status: PillarSuggestionStatus;
+  templateId?: string;
+  templateName?: string;
+  pendingIds?: string[];
+  pendingCount?: number;
+}
+
+/**
+ * Determines the suggestion state for a single pillar (workout or cardio).
+ *
+ * - `suggested` — today's schedule has an exercise for this pillar not yet done
+ * - `done` — today's log already has this pillar registered
+ * - `rest` — today is a rest day for this pillar AND no pending exercises in the block
+ * - `catchup-single` — rest day but exactly 1 scheduled exercise is still pending
+ * - `catchup-multi` — rest day but 2+ scheduled exercises are still pending
+ */
+export function getPillarSuggestion(params: {
+  pillar: "workout" | "cardio";
+  dayNumber: number;
+  todayLog: DayLog;
+  schedule: DailyScheduleEntry[];
+  blockDoneIds: Set<string>;
+  templates: { id: string; name: string }[];
+}): PillarSuggestion | null {
+  const { pillar, dayNumber, todayLog, schedule, blockDoneIds, templates } = params;
+
+  if (schedule.length !== 7) return null;
+
+  const entry = getDailySuggestion(dayNumber, schedule);
+  if (!entry) return null;
+
+  const todayId = pillar === "workout" ? entry.workoutId : entry.cardioId;
+  const loggedId = pillar === "workout" ? todayLog.workout : todayLog.cardio;
+
+  if (todayId) {
+    if (loggedId) return { status: "done" };
+    const t = templates.find((t) => t.id === todayId);
+    return { status: "suggested", templateId: todayId, templateName: t?.name };
+  }
+
+  // Rest day for this pillar — check for catch-up
+  if (loggedId) return { status: "done" };
+
+  const scheduledIds = new Set<string>();
+  for (const s of schedule) {
+    const id = pillar === "workout" ? s.workoutId : s.cardioId;
+    if (id) scheduledIds.add(id);
+  }
+
+  const pendingIds = [...scheduledIds].filter((id) => !blockDoneIds.has(id));
+
+  if (pendingIds.length === 0) return { status: "rest" };
+
+  if (pendingIds.length === 1) {
+    const t = templates.find((t) => t.id === pendingIds[0]);
+    return {
+      status: "catchup-single",
+      templateId: pendingIds[0],
+      templateName: t?.name,
+    };
+  }
+
+  return {
+    status: "catchup-multi",
+    pendingIds,
+    pendingCount: pendingIds.length,
+  };
 }

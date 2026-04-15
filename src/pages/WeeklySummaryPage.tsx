@@ -17,7 +17,7 @@ import {
 import { SubpageHeader } from "@/components/SubpageHeader";
 import { cn } from "@/lib/utils";
 import { sectionHeadingClass } from "@/lib/page-ui";
-import { Check, X, Flame, Moon, Dumbbell, Heart, ChevronLeft, ChevronRight, Trophy } from "lucide-react";
+import { Check, X, Flame, Moon, Dumbbell, HeartPulse, ChevronLeft, ChevronRight, Trophy } from "lucide-react";
 
 export default function WeeklySummaryPage() {
   const { data, getDayLog, getDayNumber } = useChallenge();
@@ -134,7 +134,7 @@ export default function WeeklySummaryPage() {
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="p-4 rounded-2xl card-elevated border border-border space-y-2">
           <div className="flex items-center gap-2 text-muted-foreground">
-            <Heart className="w-4 h-4 text-pillar-cardio" />
+            <HeartPulse className="w-4 h-4 text-pillar-cardio" />
             <span className="text-xs font-medium">Cardios</span>
           </div>
           <AnimatedProgressBar
@@ -198,7 +198,7 @@ export default function WeeklySummaryPage() {
                 <PillarIcon state={day.pillarIcons.workout} />
               </div>
               <div className="flex items-center gap-1 min-w-0">
-                <Heart className="w-3.5 h-3.5 shrink-0 text-pillar-cardio" />
+                <HeartPulse className="w-3.5 h-3.5 shrink-0 text-pillar-cardio" />
                 <span className="min-w-0 truncate text-muted-foreground">{day.cardioTemplate ? day.cardioTemplate.name : "—"}</span>
                 <PillarIcon state={day.pillarIcons.cardio} />
               </div>

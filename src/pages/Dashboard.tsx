@@ -12,6 +12,7 @@ import {
   CHALLENGE_COMPLETE_MILESTONE_ID,
   getChallengeBlockStats,
   getDailyCaloriesTotal,
+  getPillarSuggestion,
   hasCelebratedMilestone,
   isDashboardCaloriesOnTrack,
   isDashboardSleepOnTrack,
@@ -19,7 +20,7 @@ import {
   isDashboardWeeklyWorkoutsOnTrack,
   isDayFullyComplete,
 } from "@/lib/challenge-progress";
-import { Settings, Dumbbell, ChevronRight, Moon, Flame, Heart, Zap, Calendar, CheckCircle2, Scale } from "lucide-react";
+import { Settings, Dumbbell, ChevronRight, Moon, Flame, HeartPulse, Zap, Calendar, CheckCircle2, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Navigate } from "react-router-dom";
 import { sectionHeadingClass } from "@/lib/page-ui";
@@ -92,10 +93,33 @@ export default function Dashboard() {
   const todayLog = getDayLog(todayStr);
 
   const blockRange = currentDayNum != null ? challengeBlockDayRange(currentDayNum) : null;
-  const { weekWorkouts, weekCardios } =
+  const blockStats =
     blockRange != null
       ? getChallengeBlockStats(data.startDate, blockRange.firstDay, blockRange.lastDay, getDayLog)
-      : { weekWorkouts: 0, weekCardios: 0 };
+      : null;
+  const weekWorkouts = blockStats?.weekWorkouts ?? 0;
+  const weekCardios = blockStats?.weekCardios ?? 0;
+
+  const workoutHint = currentDayNum != null && data.weeklySchedule
+    ? getPillarSuggestion({
+        pillar: "workout",
+        dayNumber: currentDayNum,
+        todayLog,
+        schedule: data.weeklySchedule,
+        blockDoneIds: blockStats?.weekWorkoutIds ?? new Set(),
+        templates: data.workoutTemplates,
+      })
+    : null;
+  const cardioHint = currentDayNum != null && data.weeklySchedule
+    ? getPillarSuggestion({
+        pillar: "cardio",
+        dayNumber: currentDayNum,
+        todayLog,
+        schedule: data.weeklySchedule,
+        blockDoneIds: blockStats?.weekCardioIds ?? new Set(),
+        templates: data.cardioTemplates,
+      })
+    : null;
 
   const totalCalories = getDailyCaloriesTotal(todayLog);
   const dailyCalGoal = data.goals.dailyCalories;
@@ -120,6 +144,25 @@ export default function Dashboard() {
     data.workoutTemplates.length,
   );
   const cardioOnTrack = isDashboardWeeklyCardiosOnTrack(todayLog, weekCardios, data.goals, data.cardioTemplates.length);
+
+  function hintFromSuggestion(s: typeof workoutHint, pillarLabel: string): { text: string; color: string } | null {
+    if (!s) return null;
+    switch (s.status) {
+      case "suggested":
+        return { text: `${s.templateName ?? pillarLabel} sugerido`, color: "text-primary" };
+      case "rest":
+        return { text: "Descanso", color: "text-muted-foreground" };
+      case "catchup-single":
+        return { text: `${s.templateName ?? pillarLabel} pendente`, color: "text-primary" };
+      case "catchup-multi":
+        return { text: `${s.pendingCount} pendentes`, color: "text-primary" };
+      default:
+        return null;
+    }
+  }
+
+  const workoutCardHint = hintFromSuggestion(workoutHint, "Treino");
+  const cardioCardHint = hintFromSuggestion(cardioHint, "Cardio");
 
   const statCards = [
     {
@@ -158,15 +201,17 @@ export default function Dashboard() {
       progress: workoutProgress,
       variant: workoutOnTrack ? "success" as const : "energy" as const,
       path: `/day/${todayStr}?section=workout`,
+      hint: workoutCardHint,
     },
     {
-      icon: <Heart className="w-5 h-5 text-pillar-cardio" />,
+      icon: <HeartPulse className="w-5 h-5 text-pillar-cardio" />,
       label: "Cardios (semana)",
       value: `${weekCardios}`,
       sub: `/ ${data.goals.weeklyCardios}`,
       progress: cardioProgress,
       variant: cardioOnTrack ? "success" as const : "energy" as const,
       path: `/day/${todayStr}?section=cardio`,
+      hint: cardioCardHint,
     },
   ];
 
@@ -280,6 +325,11 @@ export default function Dashboard() {
               warnAbove={"warnAbove" in card ? card.warnAbove : undefined}
               warnOverStyle={"calWarnOrange" in card && card.calWarnOrange ? "energy" : "destructive"}
             />
+            {"hint" in card && card.hint && (
+              <p className={`text-[10px] font-medium truncate mt-1.5 ${card.hint.color}`}>
+                {card.hint.text}
+              </p>
+            )}
           </motion.button>
         ))}
       </div>
@@ -292,7 +342,7 @@ export default function Dashboard() {
           { label: "Resumo da Semana", sub: "Veja seu progresso semanal", icon: <Zap className="w-5 h-5 text-action-weekly" />, path: "/weekly" },
           { label: "Composição Corporal", sub: "Acompanhe sua evolução semanal", icon: <Scale className="w-5 h-5 text-blue-400" />, path: "/body" },
           { label: "Meus Treinos", sub: "Gerenciar templates de treino", icon: <Dumbbell className="w-5 h-5 text-pillar-workout" />, path: "/workouts" },
-          { label: "Meus Cardios", sub: "Gerenciar templates de cardio", icon: <Heart className="w-5 h-5 text-pillar-cardio" />, path: "/cardios" },
+          { label: "Meus Cardios", sub: "Gerenciar templates de cardio", icon: <HeartPulse className="w-5 h-5 text-pillar-cardio" />, path: "/cardios" },
         ].map((action, i) => (
           <motion.button
             key={action.path}

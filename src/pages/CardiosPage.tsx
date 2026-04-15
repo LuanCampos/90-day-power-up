@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { SubpageHeader } from "@/components/SubpageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { ActionIconButton } from "@/components/ActionIconButton";
-import { Plus, Trash2, Heart, ChevronRight } from "lucide-react";
+import { Plus, Trash2, HeartPulse, ChevronRight } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
 export default function CardiosPage() {
@@ -33,7 +33,7 @@ export default function CardiosPage() {
       <div className="px-5 space-y-3">
         {data.cardioTemplates.length === 0 && (
           <EmptyState
-            icon={<Heart className="w-12 h-12" />}
+            icon={<HeartPulse className="w-12 h-12" />}
             title="Nenhum cardio cadastrado"
             description="Adicione seus cardios para poder registrá-los nos dias do desafio."
           />
@@ -51,7 +51,7 @@ export default function CardiosPage() {
               onClick={() => navigate(`/cardios/${t.id}`)}
             >
               <div className="p-2 rounded-xl bg-secondary shrink-0">
-                <Heart className="w-4 h-4 text-pillar-cardio" />
+                <HeartPulse className="w-4 h-4 text-pillar-cardio" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-foreground truncate">{t.name}</p>

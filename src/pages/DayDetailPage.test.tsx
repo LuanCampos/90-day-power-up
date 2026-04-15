@@ -135,7 +135,30 @@ describe("DayDetailPage", () => {
     });
   });
 
-  it("exibe banner de sugestão do dia com label correto", async () => {
+  it("exibe banner de pendência quando há catch-up no bloco", async () => {
+    renderDayDetail();
+    await waitFor(() => screen.getByText(/Pendente da semana/i));
+    expect(screen.getByText(/Pendente da semana/i)).toBeInTheDocument();
+  });
+
+  it("exibe banner de sugestão do dia quando não há catch-up", async () => {
+    writeRawChallengeJson({
+      startDate: "2026-04-01",
+      goals: DEFAULT_GOALS,
+      workoutTemplates: [{ id: "w1", name: "Upper", order: 0, exercises: [] }],
+      cardioTemplates: [{ id: "c1", name: "Core A", order: 0 }],
+      weeklySchedule: [
+        { label: "Descanso" },
+        { label: "Descanso" },
+        { label: "Descanso" },
+        { label: "Descanso" },
+        { label: "Descanso" },
+        { workoutId: "w1", cardioId: "c1", label: "Upper + Core A" },
+        { label: "Descanso" },
+      ],
+      dayLogs: {},
+      feedback: { celebratedMilestones: [] },
+    });
     renderDayDetail();
     await waitFor(() => screen.getByText(/Sugestão do dia/i));
     expect(screen.getByText(/Sugestão do dia/i)).toBeInTheDocument();

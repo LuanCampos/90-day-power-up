@@ -7,6 +7,7 @@ import {
   getChallengeBlockStats,
   getDailyCaloriesTotal,
   getDailySuggestion,
+  getPillarSuggestion,
   getWeekDayPillarIcons,
   getWeekStats,
   isCalorieGoalMet,
@@ -398,7 +399,7 @@ describe("challenge week block", () => {
     expect(challengeWeekMilestoneId(85, 90)).toBe("week-challenge-85-90");
   });
 
-  it("getChallengeBlockStats uses challenge dates", () => {
+  it("getChallengeBlockStats uses challenge dates and returns ID sets", () => {
     const start = "2026-04-01";
     const stats = getChallengeBlockStats(start, 1, 7, (d) =>
       d === "2026-04-02" ? { ...emptyLog(d), workout: "a", cardio: "c1" } : emptyLog(d),
@@ -407,6 +408,21 @@ describe("challenge week block", () => {
     expect(stats.weekCardios).toBe(1);
     expect(stats.dateStrings[0]).toBe("2026-04-01");
     expect(stats.dateStrings).toHaveLength(7);
+    expect(stats.weekWorkoutIds).toEqual(new Set(["a"]));
+    expect(stats.weekCardioIds).toEqual(new Set(["c1"]));
+  });
+
+  it("getChallengeBlockStats counts days (not unique IDs) for weekWorkouts/weekCardios", () => {
+    const start = "2026-04-01";
+    const stats = getChallengeBlockStats(start, 1, 7, (d) => {
+      if (d === "2026-04-01") return { ...emptyLog(d), workout: "a", cardio: "c1" };
+      if (d === "2026-04-03") return { ...emptyLog(d), workout: "a", cardio: "c1" };
+      return emptyLog(d);
+    });
+    expect(stats.weekWorkouts).toBe(2);
+    expect(stats.weekCardios).toBe(2);
+    expect(stats.weekWorkoutIds).toEqual(new Set(["a"]));
+    expect(stats.weekCardioIds).toEqual(new Set(["c1"]));
   });
 
   it("defaultChallengeViewBlockFirstDay picks block from today or edges", () => {
@@ -457,5 +473,146 @@ describe("getDailySuggestion", () => {
   it("returns null for wrong-length schedule", () => {
     expect(getDailySuggestion(1, [])).toBeNull();
     expect(getDailySuggestion(1, [schedule[0]])).toBeNull();
+  });
+});
+
+describe("getPillarSuggestion", () => {
+  const schedule: DailyScheduleEntry[] = [
+    { workoutId: "w1", cardioId: "c1", label: "Upper A + Core A" },
+    { workoutId: "w2", cardioId: "c2", label: "Lower A + Core B" },
+    {                   cardioId: "c4", label: "Descanso + Core leve" },
+    { workoutId: "w3", cardioId: "c3", label: "Upper B + Core C" },
+    { workoutId: "w4", cardioId: "c1", label: "Lower B + Core A" },
+    {                   cardioId: "c4", label: "Descanso ativo" },
+    {                   cardioId: "c4", label: "Descanso total" },
+  ];
+
+  const workoutTemplates = [
+    { id: "w1", name: "Upper A" },
+    { id: "w2", name: "Lower A" },
+    { id: "w3", name: "Upper B" },
+    { id: "w4", name: "Lower B" },
+  ];
+
+  const cardioTemplates = [
+    { id: "c1", name: "Core A" },
+    { id: "c2", name: "Core B" },
+    { id: "c3", name: "Core C" },
+    { id: "c4", name: "Core Leve" },
+  ];
+
+  it("returns 'suggested' when schedule has workout for today and not done", () => {
+    const result = getPillarSuggestion({
+      pillar: "workout",
+      dayNumber: 1,
+      todayLog: emptyLog("2026-04-01"),
+      schedule,
+      blockDoneIds: new Set(),
+      templates: workoutTemplates,
+    });
+    expect(result).toEqual({ status: "suggested", templateId: "w1", templateName: "Upper A" });
+  });
+
+  it("returns 'done' when today's log already has the pillar registered", () => {
+    const result = getPillarSuggestion({
+      pillar: "workout",
+      dayNumber: 1,
+      todayLog: { ...emptyLog("2026-04-01"), workout: "w1" },
+      schedule,
+      blockDoneIds: new Set(),
+      templates: workoutTemplates,
+    });
+    expect(result).toEqual({ status: "done" });
+  });
+
+  it("returns 'done' when workout logged on a rest day", () => {
+    const result = getPillarSuggestion({
+      pillar: "workout",
+      dayNumber: 3,
+      todayLog: { ...emptyLog("2026-04-03"), workout: "w2" },
+      schedule,
+      blockDoneIds: new Set(),
+      templates: workoutTemplates,
+    });
+    expect(result).toEqual({ status: "done" });
+  });
+
+  it("returns 'rest' when it's a rest day and all scheduled workouts are done", () => {
+    const result = getPillarSuggestion({
+      pillar: "workout",
+      dayNumber: 3,
+      todayLog: emptyLog("2026-04-03"),
+      schedule,
+      blockDoneIds: new Set(["w1", "w2", "w3", "w4"]),
+      templates: workoutTemplates,
+    });
+    expect(result).toEqual({ status: "rest" });
+  });
+
+  it("returns 'catchup-single' when rest day with 1 pending workout", () => {
+    const result = getPillarSuggestion({
+      pillar: "workout",
+      dayNumber: 3,
+      todayLog: emptyLog("2026-04-03"),
+      schedule,
+      blockDoneIds: new Set(["w1", "w2", "w4"]),
+      templates: workoutTemplates,
+    });
+    expect(result).toEqual({
+      status: "catchup-single",
+      templateId: "w3",
+      templateName: "Upper B",
+    });
+  });
+
+  it("returns 'catchup-multi' when rest day with 2+ pending workouts", () => {
+    const result = getPillarSuggestion({
+      pillar: "workout",
+      dayNumber: 3,
+      todayLog: emptyLog("2026-04-03"),
+      schedule,
+      blockDoneIds: new Set(["w1"]),
+      templates: workoutTemplates,
+    });
+    expect(result).toEqual({
+      status: "catchup-multi",
+      pendingIds: ["w2", "w3", "w4"],
+      pendingCount: 3,
+    });
+  });
+
+  it("works for cardio pillar — suggested", () => {
+    const result = getPillarSuggestion({
+      pillar: "cardio",
+      dayNumber: 1,
+      todayLog: emptyLog("2026-04-01"),
+      schedule,
+      blockDoneIds: new Set(),
+      templates: cardioTemplates,
+    });
+    expect(result).toEqual({ status: "suggested", templateId: "c1", templateName: "Core A" });
+  });
+
+  it("cardio on rest day (day 3 has cardio c4 but no workout) — 'suggested' for cardio", () => {
+    const result = getPillarSuggestion({
+      pillar: "cardio",
+      dayNumber: 3,
+      todayLog: emptyLog("2026-04-03"),
+      schedule,
+      blockDoneIds: new Set(),
+      templates: cardioTemplates,
+    });
+    expect(result).toEqual({ status: "suggested", templateId: "c4", templateName: "Core Leve" });
+  });
+
+  it("returns null when schedule is invalid", () => {
+    expect(getPillarSuggestion({
+      pillar: "workout",
+      dayNumber: 1,
+      todayLog: emptyLog("2026-04-01"),
+      schedule: [],
+      blockDoneIds: new Set(),
+      templates: workoutTemplates,
+    })).toBeNull();
   });
 });
