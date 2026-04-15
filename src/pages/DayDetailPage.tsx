@@ -332,7 +332,7 @@ export default function DayDetailPage() {
           else if (cardioSuggestion?.status === "catchup-multi") parts.push(`${cardioSuggestion.pendingCount} cardios`);
           return (
             <div className="px-5 pb-2">
-              <div className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm bg-primary/10 text-primary">
+              <div className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm bg-amber-500/10 text-amber-500">
                 <CalendarClock className="h-4 w-4 shrink-0" />
                 <div>
                   <span className="font-medium">Pendente da semana:</span>{" "}
@@ -348,7 +348,7 @@ export default function DayDetailPage() {
               <div className={cn(
                 "flex items-center gap-3 rounded-xl px-4 py-3 text-sm",
                 suggestion.workoutId
-                  ? "bg-primary/10 text-primary"
+                  ? "bg-blue-400/10 text-blue-400"
                   : "bg-muted text-muted-foreground",
               )}>
                 <CalendarClock className="h-4 w-4 shrink-0" />
@@ -502,7 +502,9 @@ export default function DayDetailPage() {
                 {data.workoutTemplates.map((t) => {
                   const isSelectedToday = log.workout === t.id;
                   const doneThisWeek = weekWorkoutIds.has(t.id);
-                  const isSuggested = !isSelectedToday && !doneThisWeek && workoutSuggestedIds.has(t.id);
+                  const isHighlighted = !isSelectedToday && !doneThisWeek && workoutSuggestedIds.has(t.id);
+                  const isPending = isHighlighted && workoutSuggestionIsCatchup;
+                  const isSuggestedNormal = isHighlighted && !workoutSuggestionIsCatchup;
                   return (
                     <button key={t.id} onClick={() => handleWorkoutTap(t.id)}
                       className={cn(
@@ -511,9 +513,11 @@ export default function DayDetailPage() {
                           ? "border-success bg-success/10 text-success"
                           : doneThisWeek
                             ? "border-success/30 bg-success/5 text-muted-foreground"
-                            : isSuggested
-                              ? "border-primary/40 bg-primary/5 ring-1 ring-primary/20 text-muted-foreground"
-                              : "border-border bg-secondary text-muted-foreground hover:border-primary/30",
+                            : isPending
+                              ? "border-amber-500/40 bg-amber-500/5 ring-1 ring-amber-500/20 text-muted-foreground"
+                              : isSuggestedNormal
+                                ? "border-blue-400/40 bg-blue-400/5 ring-1 ring-blue-400/20 text-muted-foreground"
+                                : "border-border bg-secondary text-muted-foreground hover:border-primary/30",
                       )}>
                       <div className="flex items-center gap-1.5 justify-center">
                         {(isSelectedToday || doneThisWeek) && <Check className="w-3.5 h-3.5 shrink-0" />}
@@ -522,10 +526,11 @@ export default function DayDetailPage() {
                       {doneThisWeek && !isSelectedToday && (
                         <span className="text-[10px] text-success/60 block mt-0.5">feito na semana</span>
                       )}
-                      {isSuggested && (
-                        <span className="text-[10px] text-primary/70 block mt-0.5">
-                          {workoutSuggestionIsCatchup ? "pendente" : "sugerido"}
-                        </span>
+                      {isPending && (
+                        <span className="text-[10px] text-amber-500/80 block mt-0.5">pendente</span>
+                      )}
+                      {isSuggestedNormal && (
+                        <span className="text-[10px] text-blue-400/80 block mt-0.5">sugerido</span>
                       )}
                     </button>
                   );
@@ -572,7 +577,9 @@ export default function DayDetailPage() {
                 {data.cardioTemplates.map((t) => {
                   const isSelectedToday = log.cardio === t.id;
                   const doneThisWeek = weekCardioIds.has(t.id);
-                  const isSuggested = !isSelectedToday && !doneThisWeek && cardioSuggestedIds.has(t.id);
+                  const isHighlighted = !isSelectedToday && !doneThisWeek && cardioSuggestedIds.has(t.id);
+                  const isPending = isHighlighted && cardioSuggestionIsCatchup;
+                  const isSuggestedNormal = isHighlighted && !cardioSuggestionIsCatchup;
                   return (
                     <button key={t.id} onClick={() => handleCardioTap(t.id)}
                       className={cn(
@@ -581,9 +588,11 @@ export default function DayDetailPage() {
                           ? "border-success bg-success/10 text-success"
                           : doneThisWeek
                             ? "border-success/30 bg-success/5 text-muted-foreground"
-                            : isSuggested
-                              ? "border-primary/40 bg-primary/5 ring-1 ring-primary/20 text-muted-foreground"
-                              : "border-border bg-secondary text-muted-foreground hover:border-primary/30",
+                            : isPending
+                              ? "border-amber-500/40 bg-amber-500/5 ring-1 ring-amber-500/20 text-muted-foreground"
+                              : isSuggestedNormal
+                                ? "border-blue-400/40 bg-blue-400/5 ring-1 ring-blue-400/20 text-muted-foreground"
+                                : "border-border bg-secondary text-muted-foreground hover:border-primary/30",
                       )}>
                       <div className="flex items-center gap-1.5 justify-center">
                         {(isSelectedToday || doneThisWeek) && <Check className="w-3.5 h-3.5 shrink-0" />}
@@ -592,10 +601,11 @@ export default function DayDetailPage() {
                       {doneThisWeek && !isSelectedToday && (
                         <span className="text-[10px] text-success/60 block mt-0.5">feito na semana</span>
                       )}
-                      {isSuggested && (
-                        <span className="text-[10px] text-primary/70 block mt-0.5">
-                          {cardioSuggestionIsCatchup ? "pendente" : "sugerido"}
-                        </span>
+                      {isPending && (
+                        <span className="text-[10px] text-amber-500/80 block mt-0.5">pendente</span>
+                      )}
+                      {isSuggestedNormal && (
+                        <span className="text-[10px] text-blue-400/80 block mt-0.5">sugerido</span>
                       )}
                     </button>
                   );

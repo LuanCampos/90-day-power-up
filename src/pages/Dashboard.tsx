@@ -149,13 +149,13 @@ export default function Dashboard() {
     if (!s) return null;
     switch (s.status) {
       case "suggested":
-        return { text: `${s.templateName ?? pillarLabel} sugerido`, color: "text-primary" };
+        return { text: `${s.templateName ?? pillarLabel} sugerido`, color: "text-blue-400" };
       case "rest":
         return { text: "Descanso", color: "text-muted-foreground" };
       case "catchup-single":
-        return { text: `${s.templateName ?? pillarLabel} pendente`, color: "text-primary" };
+        return { text: `${s.templateName ?? pillarLabel} pendente`, color: "text-amber-500" };
       case "catchup-multi":
-        return { text: `${s.pendingCount} pendentes`, color: "text-primary" };
+        return { text: `${s.pendingCount} pendentes`, color: "text-amber-500" };
       default:
         return null;
     }
