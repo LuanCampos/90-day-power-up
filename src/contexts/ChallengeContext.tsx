@@ -140,8 +140,7 @@ function workoutsHaveNewShape(templates: unknown[]): boolean {
 }
 
 function resolveTemplates<T>(saved: T[] | undefined, defaults: T[], isValid: (items: T[]) => boolean): T[] {
-  if (!Array.isArray(saved)) return defaults;
-  if (saved.length === 0) return saved;
+  if (!Array.isArray(saved) || saved.length === 0) return defaults;
   return isValid(saved) ? saved : defaults;
 }
 
