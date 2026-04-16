@@ -364,16 +364,17 @@ export function getPillarSuggestion(params: {
     return { status: "suggested", templateId: todayId, templateName: t?.name };
   }
 
-  // Rest day for this pillar — check for catch-up
+  // Rest day for this pillar — check for catch-up (only past days count as pending)
   if (loggedId) return { status: "done" };
 
-  const scheduledIds = new Set<string>();
-  for (const s of schedule) {
-    const id = pillar === "workout" ? s.workoutId : s.cardioId;
-    if (id) scheduledIds.add(id);
+  const todayIndex = (dayNumber - 1) % 7; // 0-based index in the 7-day cycle
+  const pastScheduledIds = new Set<string>();
+  for (let i = 0; i < todayIndex; i++) {
+    const id = pillar === "workout" ? schedule[i].workoutId : schedule[i].cardioId;
+    if (id) pastScheduledIds.add(id);
   }
 
-  const pendingIds = [...scheduledIds].filter((id) => !blockDoneIds.has(id));
+  const pendingIds = [...pastScheduledIds].filter((id) => !blockDoneIds.has(id));
 
   if (pendingIds.length === 0) return { status: "rest" };
 
