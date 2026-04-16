@@ -549,7 +549,7 @@ describe("getPillarSuggestion", () => {
     expect(result).toEqual({ status: "rest" });
   });
 
-  it("returns 'catchup-single' when rest day with 1 pending workout", () => {
+  it("returns 'rest' when rest day has no overdue workouts in real time", () => {
     const result = getPillarSuggestion({
       pillar: "workout",
       dayNumber: 3,
@@ -558,18 +558,30 @@ describe("getPillarSuggestion", () => {
       blockDoneIds: new Set(["w1", "w2", "w4"]),
       templates: workoutTemplates,
     });
-    expect(result).toEqual({
-      status: "catchup-single",
-      templateId: "w3",
-      templateName: "Upper B",
-    });
+    expect(result).toEqual({ status: "rest" });
   });
 
-  it("returns 'catchup-multi' when rest day with 2+ pending workouts", () => {
+  it("returns 'catchup-single' when rest day has 1 overdue workout", () => {
     const result = getPillarSuggestion({
       pillar: "workout",
       dayNumber: 3,
       todayLog: emptyLog("2026-04-03"),
+      schedule,
+      blockDoneIds: new Set(["w1"]),
+      templates: workoutTemplates,
+    });
+    expect(result).toEqual({
+      status: "catchup-single",
+      templateId: "w2",
+      templateName: "Lower A",
+    });
+  });
+
+  it("returns 'catchup-multi' when a late-week rest day has 2+ overdue workouts", () => {
+    const result = getPillarSuggestion({
+      pillar: "workout",
+      dayNumber: 7,
+      todayLog: emptyLog("2026-04-07"),
       schedule,
       blockDoneIds: new Set(["w1"]),
       templates: workoutTemplates,
