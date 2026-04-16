@@ -116,6 +116,7 @@ export default function DayDetailPage() {
   }
 
   const todayStr = format(new Date(), "yyyy-MM-dd");
+  const todayDayNum = getDayNumber(todayStr);
   const currentDate = parseISO(date);
   const prevDate = format(addDays(currentDate, -1), "yyyy-MM-dd");
   const nextDate = format(addDays(currentDate, 1), "yyyy-MM-dd");
@@ -138,7 +139,7 @@ export default function DayDetailPage() {
   // Daily suggestion based on 7-day cycle
   const suggestion = dayNum != null ? getDailySuggestion(dayNum, data.weeklySchedule) : null;
 
-  // Pillar suggestions (shared logic with Dashboard — includes catch-up on rest days)
+  // Pillar suggestions (shared logic with Dashboard — catch-up only for items overdue in real time)
   const blockDoneIdsForWorkout = new Set(blockStats?.weekWorkoutIds ?? []);
   const blockDoneIdsForCardio = new Set(blockStats?.weekCardioIds ?? []);
   if (log.workout) blockDoneIdsForWorkout.delete(log.workout);
@@ -147,6 +148,7 @@ export default function DayDetailPage() {
     ? getPillarSuggestion({
         pillar: "workout",
         dayNumber: dayNum,
+        referenceDayNumber: todayDayNum,
         todayLog: log,
         schedule: data.weeklySchedule,
         blockDoneIds: blockDoneIdsForWorkout,
@@ -157,6 +159,7 @@ export default function DayDetailPage() {
     ? getPillarSuggestion({
         pillar: "cardio",
         dayNumber: dayNum,
+        referenceDayNumber: todayDayNum,
         todayLog: log,
         schedule: data.weeklySchedule,
         blockDoneIds: blockDoneIdsForCardio,

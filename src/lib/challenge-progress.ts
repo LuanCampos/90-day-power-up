@@ -334,47 +334,70 @@ export interface PillarSuggestion {
 /**
  * Determines the suggestion state for a single pillar (workout or cardio).
  *
- * - `suggested` — today's schedule has an exercise for this pillar not yet done
- * - `done` — today's log already has this pillar registered
- * - `rest` — today is a rest day for this pillar AND no pending exercises in the block
- * - `catchup-single` — rest day but exactly 1 scheduled exercise is still pending
- * - `catchup-multi` — rest day but 2+ scheduled exercises are still pending
+ * `referenceDayNumber` is the real current challenge day used to decide whether
+ * something is still upcoming or already overdue in the viewed 7-day block.
+ *
+ * - `suggested` — scheduled for the viewed day, but not overdue yet
+ * - `done` — the viewed day's log already has this pillar registered
+ * - `rest` — no overdue exercises for this pillar in the viewed block
+ * - `catchup-single` — exactly 1 overdue exercise in the viewed block
+ * - `catchup-multi` — 2+ overdue exercises in the viewed block
  */
 export function getPillarSuggestion(params: {
   pillar: "workout" | "cardio";
   dayNumber: number;
+  referenceDayNumber?: number | null;
   todayLog: DayLog;
   schedule: DailyScheduleEntry[];
   blockDoneIds: Set<string>;
   templates: { id: string; name: string }[];
 }): PillarSuggestion | null {
-  const { pillar, dayNumber, todayLog, schedule, blockDoneIds, templates } = params;
+  const {
+    pillar,
+    dayNumber,
+    referenceDayNumber = dayNumber,
+    todayLog,
+    schedule,
+    blockDoneIds,
+    templates,
+  } = params;
 
   if (schedule.length !== 7) return null;
 
   const entry = getDailySuggestion(dayNumber, schedule);
   if (!entry) return null;
 
-  const todayId = pillar === "workout" ? entry.workoutId : entry.cardioId;
+  const dayTemplateId = pillar === "workout" ? entry.workoutId : entry.cardioId;
   const loggedId = pillar === "workout" ? todayLog.workout : todayLog.cardio;
+  const { firstDay: blockFirst, lastDay: blockLast } = challengeBlockDayRange(dayNumber);
 
-  if (todayId) {
+  const overdueThroughDay =
+    referenceDayNumber == null || referenceDayNumber <= blockFirst
+      ? null
+      : Math.min(referenceDayNumber - 1, blockLast);
+  const viewedDayIsOverdue = overdueThroughDay != null && dayNumber <= overdueThroughDay;
+
+  if (dayTemplateId) {
     if (loggedId) return { status: "done" };
-    const t = templates.find((t) => t.id === todayId);
-    return { status: "suggested", templateId: todayId, templateName: t?.name };
+    const t = templates.find((t) => t.id === dayTemplateId);
+    if (viewedDayIsOverdue) {
+      return { status: "catchup-single", templateId: dayTemplateId, templateName: t?.name };
+    }
+    return { status: "suggested", templateId: dayTemplateId, templateName: t?.name };
   }
 
-  // Rest day for this pillar — check for catch-up (only past days count as pending)
   if (loggedId) return { status: "done" };
+  if (overdueThroughDay == null) return { status: "rest" };
 
-  const todayIndex = (dayNumber - 1) % 7; // 0-based index in the 7-day cycle
-  const pastScheduledIds = new Set<string>();
-  for (let i = 0; i < todayIndex; i++) {
-    const id = pillar === "workout" ? schedule[i].workoutId : schedule[i].cardioId;
-    if (id) pastScheduledIds.add(id);
+  const overdueDayCount = overdueThroughDay - blockFirst + 1;
+  const overdueScheduledIds = new Set<string>();
+  for (let i = 0; i < overdueDayCount; i++) {
+    const scheduledEntry = schedule[i];
+    const id = pillar === "workout" ? scheduledEntry.workoutId : scheduledEntry.cardioId;
+    if (id) overdueScheduledIds.add(id);
   }
 
-  const pendingIds = [...pastScheduledIds].filter((id) => !blockDoneIds.has(id));
+  const pendingIds = [...overdueScheduledIds].filter((id) => !blockDoneIds.has(id));
 
   if (pendingIds.length === 0) return { status: "rest" };
 

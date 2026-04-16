@@ -581,6 +581,36 @@ describe("getPillarSuggestion", () => {
     });
   });
 
+  it("uses the real current day when evaluating a future rest-day page", () => {
+    const result = getPillarSuggestion({
+      pillar: "workout",
+      dayNumber: 3,
+      referenceDayNumber: 2,
+      todayLog: emptyLog("2026-04-03"),
+      schedule,
+      blockDoneIds: new Set(["w1"]),
+      templates: workoutTemplates,
+    });
+    expect(result).toEqual({ status: "rest" });
+  });
+
+  it("marks a viewed past scheduled day as pending once it is overdue in real time", () => {
+    const result = getPillarSuggestion({
+      pillar: "workout",
+      dayNumber: 1,
+      referenceDayNumber: 3,
+      todayLog: emptyLog("2026-04-01"),
+      schedule,
+      blockDoneIds: new Set(),
+      templates: workoutTemplates,
+    });
+    expect(result).toEqual({
+      status: "catchup-single",
+      templateId: "w1",
+      templateName: "Upper A",
+    });
+  });
+
   it("works for cardio pillar — suggested", () => {
     const result = getPillarSuggestion({
       pillar: "cardio",
