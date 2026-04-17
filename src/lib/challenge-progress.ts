@@ -117,13 +117,17 @@ export function weekSummaryPillarWorkoutIcon(
   workoutTemplateCount: number,
   dayDateStr: string,
   todayStr: string,
+  wasScheduled: boolean = true,
 ): WeekDayPillarIcon {
   if (workoutTemplateCount <= 0) return "none";
   if (dayDateStr > todayStr) return "none";
   if (dayDateStr === todayStr) {
     return log.workout ? "good" : "none";
   }
-  return log.workout ? "good" : "bad";
+  if (log.workout) return "good";
+  // Dia de descanso (sem agendamento) não conta como falha.
+  if (!wasScheduled) return "none";
+  return "bad";
 }
 
 export function weekSummaryPillarCardioIcon(
@@ -131,13 +135,16 @@ export function weekSummaryPillarCardioIcon(
   cardioTemplateCount: number,
   dayDateStr: string,
   todayStr: string,
+  wasScheduled: boolean = true,
 ): WeekDayPillarIcon {
   if (cardioTemplateCount <= 0) return "none";
   if (dayDateStr > todayStr) return "none";
   if (dayDateStr === todayStr) {
     return log.cardio ? "good" : "none";
   }
-  return log.cardio ? "good" : "bad";
+  if (log.cardio) return "good";
+  if (!wasScheduled) return "none";
+  return "bad";
 }
 
 export function getWeekDayPillarIcons(
@@ -147,12 +154,17 @@ export function getWeekDayPillarIcons(
   cardioTemplateCount: number,
   dayDateStr: string,
   todayStr: string,
+  scheduleEntry?: DailyScheduleEntry | null,
 ): Record<"calories" | "sleep" | "workout" | "cardio", WeekDayPillarIcon> {
+  // Se há schedule definido, dia sem treino/cardio agendado é descanso.
+  // Sem schedule (undefined), assume agendado para manter retrocompatibilidade.
+  const workoutScheduled = scheduleEntry === undefined ? true : Boolean(scheduleEntry?.workoutId);
+  const cardioScheduled = scheduleEntry === undefined ? true : Boolean(scheduleEntry?.cardioId);
   return {
     calories: weekSummaryPillarCaloriesIcon(log, goals, dayDateStr, todayStr),
     sleep: weekSummaryPillarSleepIcon(log, goals, dayDateStr, todayStr),
-    workout: weekSummaryPillarWorkoutIcon(log, workoutTemplateCount, dayDateStr, todayStr),
-    cardio: weekSummaryPillarCardioIcon(log, cardioTemplateCount, dayDateStr, todayStr),
+    workout: weekSummaryPillarWorkoutIcon(log, workoutTemplateCount, dayDateStr, todayStr, workoutScheduled),
+    cardio: weekSummaryPillarCardioIcon(log, cardioTemplateCount, dayDateStr, todayStr, cardioScheduled),
   };
 }
 
