@@ -11,6 +11,7 @@ import {
   defaultChallengeViewBlockFirstDay,
   getChallengeBlockStats,
   getDailyCaloriesTotal,
+  getDailySuggestion,
   getWeekDayPillarIcons,
   type WeekDayPillarIcon,
 } from "@/lib/challenge-progress";
