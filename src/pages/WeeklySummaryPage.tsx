@@ -42,7 +42,8 @@ export default function WeeklySummaryPage() {
     const totalCal = getDailyCaloriesTotal(log);
     const workoutTemplate = log.workout ? data.workoutTemplates.find(t => t.id === log.workout) : null;
     const cardioTemplate = log.cardio ? data.cardioTemplates.find(t => t.id === log.cardio) : null;
-    const pillarIcons = getWeekDayPillarIcons(log, data.goals, data.workoutTemplates.length, data.cardioTemplates.length, dateStr, todayStr);
+    const scheduleEntry = dayNum != null ? getDailySuggestion(dayNum, data.weeklySchedule) : null;
+    const pillarIcons = getWeekDayPillarIcons(log, data.goals, data.workoutTemplates.length, data.cardioTemplates.length, dateStr, todayStr, scheduleEntry);
 
     return { d, dateStr, dayNum, log, totalCal, workoutTemplate, cardioTemplate, pillarIcons };
   });
