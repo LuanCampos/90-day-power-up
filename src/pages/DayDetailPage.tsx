@@ -15,6 +15,7 @@ import {
   challengeBlockDayRange,
   challengeWeekMilestoneId,
   getChallengeBlockStats,
+  getCurrentDayPillarPending,
   getDailyCaloriesTotal,
   getDailySuggestion,
   getPillarSuggestion,
@@ -167,30 +168,64 @@ export default function DayDetailPage() {
       })
     : null;
 
+  const isCurrentChallengeDay = dayNum != null && todayDayNum != null && dayNum === todayDayNum;
+  const workoutPending = dayNum != null && data.weeklySchedule
+    ? isCurrentChallengeDay
+      ? getCurrentDayPillarPending({
+          pillar: "workout",
+          currentDayNumber: dayNum,
+          schedule: data.weeklySchedule,
+          blockDoneIds: blockDoneIdsForWorkout,
+          templates: data.workoutTemplates,
+        })
+      : workoutSuggestion?.status === "catchup-single" || workoutSuggestion?.status === "catchup-multi"
+        ? workoutSuggestion
+        : null
+    : null;
+  const cardioPending = dayNum != null && data.weeklySchedule
+    ? isCurrentChallengeDay
+      ? getCurrentDayPillarPending({
+          pillar: "cardio",
+          currentDayNumber: dayNum,
+          schedule: data.weeklySchedule,
+          blockDoneIds: blockDoneIdsForCardio,
+          templates: data.cardioTemplates,
+        })
+      : cardioSuggestion?.status === "catchup-single" || cardioSuggestion?.status === "catchup-multi"
+        ? cardioSuggestion
+        : null
+    : null;
+
   const workoutSuggestedIds = new Set<string>();
+  const workoutPendingIds = new Set<string>();
   const cardioSuggestedIds = new Set<string>();
-  let workoutSuggestionIsCatchup = false;
-  let cardioSuggestionIsCatchup = false;
+  const cardioPendingIds = new Set<string>();
+  if (workoutSuggestion?.status === "suggested" && workoutSuggestion.templateId) {
+    workoutSuggestedIds.add(workoutSuggestion.templateId);
+  }
+  if (workoutPending) {
+    if (workoutPending.status === "catchup-single" && workoutPending.templateId) {
+      workoutPendingIds.add(workoutPending.templateId);
+    } else if (workoutPending.status === "catchup-multi" && workoutPending.pendingIds) {
+      for (const id of workoutPending.pendingIds) workoutPendingIds.add(id);
+    }
+  }
+  if (cardioSuggestion?.status === "suggested" && cardioSuggestion.templateId) {
+    cardioSuggestedIds.add(cardioSuggestion.templateId);
+  }
+  if (cardioPending) {
+    if (cardioPending.status === "catchup-single" && cardioPending.templateId) {
+      cardioPendingIds.add(cardioPending.templateId);
+    } else if (cardioPending.status === "catchup-multi" && cardioPending.pendingIds) {
+      for (const id of cardioPending.pendingIds) cardioPendingIds.add(id);
+    }
+  }
+
+  const hasPending = workoutPendingIds.size > 0 || cardioPendingIds.size > 0;
+  const showSuggestionBanner = Boolean(suggestion) && (!hasPending || isCurrentChallengeDay);
   if (workoutSuggestion) {
     if (workoutSuggestion.status === "suggested" && workoutSuggestion.templateId) {
       workoutSuggestedIds.add(workoutSuggestion.templateId);
-    } else if (workoutSuggestion.status === "catchup-single" && workoutSuggestion.templateId) {
-      workoutSuggestedIds.add(workoutSuggestion.templateId);
-      workoutSuggestionIsCatchup = true;
-    } else if (workoutSuggestion.status === "catchup-multi" && workoutSuggestion.pendingIds) {
-      for (const id of workoutSuggestion.pendingIds) workoutSuggestedIds.add(id);
-      workoutSuggestionIsCatchup = true;
-    }
-  }
-  if (cardioSuggestion) {
-    if (cardioSuggestion.status === "suggested" && cardioSuggestion.templateId) {
-      cardioSuggestedIds.add(cardioSuggestion.templateId);
-    } else if (cardioSuggestion.status === "catchup-single" && cardioSuggestion.templateId) {
-      cardioSuggestedIds.add(cardioSuggestion.templateId);
-      cardioSuggestionIsCatchup = true;
-    } else if (cardioSuggestion.status === "catchup-multi" && cardioSuggestion.pendingIds) {
-      for (const id of cardioSuggestion.pendingIds) cardioSuggestedIds.add(id);
-      cardioSuggestionIsCatchup = true;
     }
   }
 
@@ -326,15 +361,15 @@ export default function DayDetailPage() {
 
       {/* Suggestion banner */}
       {showAll && (() => {
-        const hasCatchup = workoutSuggestionIsCatchup || cardioSuggestionIsCatchup;
-        if (hasCatchup) {
+        const banners = [] as JSX.Element[];
+        if (hasPending) {
           const parts: string[] = [];
-          if (workoutSuggestion?.status === "catchup-single") parts.push(workoutSuggestion.templateName ?? "Treino");
-          else if (workoutSuggestion?.status === "catchup-multi") parts.push(`${workoutSuggestion.pendingCount} treinos`);
-          if (cardioSuggestion?.status === "catchup-single") parts.push(cardioSuggestion.templateName ?? "Cardio");
-          else if (cardioSuggestion?.status === "catchup-multi") parts.push(`${cardioSuggestion.pendingCount} cardios`);
-          return (
-            <div className="px-5 pb-2">
+          if (workoutPending?.status === "catchup-single") parts.push(workoutPending.templateName ?? "Treino");
+          else if (workoutPending?.status === "catchup-multi") parts.push(`${workoutPending.pendingCount} treinos`);
+          if (cardioPending?.status === "catchup-single") parts.push(cardioPending.templateName ?? "Cardio");
+          else if (cardioPending?.status === "catchup-multi") parts.push(`${cardioPending.pendingCount} cardios`);
+          banners.push(
+            <div key="pending" className="px-5 pb-2">
               <div className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm bg-amber-500/10 text-amber-500">
                 <CalendarClock className="h-4 w-4 shrink-0" />
                 <div>
@@ -342,28 +377,28 @@ export default function DayDetailPage() {
                   <span>{parts.join(" + ")}</span>
                 </div>
               </div>
-            </div>
+            </div>,
           );
         }
-        if (suggestion) {
-          return (
-            <div className="px-5 pb-2">
+        if (showSuggestionBanner) {
+          banners.push(
+            <div key="suggested" className="px-5 pb-2">
               <div className={cn(
                 "flex items-center gap-3 rounded-xl px-4 py-3 text-sm",
-                suggestion.workoutId
+                suggestion?.workoutId
                   ? "bg-blue-400/10 text-blue-400"
                   : "bg-muted text-muted-foreground",
               )}>
                 <CalendarClock className="h-4 w-4 shrink-0" />
                 <div>
                   <span className="font-medium">Sugestão do dia:</span>{" "}
-                  <span>{suggestion.label}</span>
+                  <span>{suggestion?.label}</span>
                 </div>
               </div>
-            </div>
+            </div>,
           );
         }
-        return null;
+        return banners.length > 0 ? <>{banners}</> : null;
       })()}
 
       <div className="px-5 space-y-5">
@@ -505,9 +540,8 @@ export default function DayDetailPage() {
                 {data.workoutTemplates.map((t) => {
                   const isSelectedToday = log.workout === t.id;
                   const doneThisWeek = weekWorkoutIds.has(t.id);
-                  const isHighlighted = !isSelectedToday && !doneThisWeek && workoutSuggestedIds.has(t.id);
-                  const isPending = isHighlighted && workoutSuggestionIsCatchup;
-                  const isSuggestedNormal = isHighlighted && !workoutSuggestionIsCatchup;
+                  const isPending = !isSelectedToday && !doneThisWeek && workoutPendingIds.has(t.id);
+                  const isSuggestedNormal = !isSelectedToday && !doneThisWeek && workoutSuggestedIds.has(t.id);
                   return (
                     <button key={t.id} onClick={() => handleWorkoutTap(t.id)}
                       className={cn(
@@ -580,9 +614,8 @@ export default function DayDetailPage() {
                 {data.cardioTemplates.map((t) => {
                   const isSelectedToday = log.cardio === t.id;
                   const doneThisWeek = weekCardioIds.has(t.id);
-                  const isHighlighted = !isSelectedToday && !doneThisWeek && cardioSuggestedIds.has(t.id);
-                  const isPending = isHighlighted && cardioSuggestionIsCatchup;
-                  const isSuggestedNormal = isHighlighted && !cardioSuggestionIsCatchup;
+                  const isPending = !isSelectedToday && !doneThisWeek && cardioPendingIds.has(t.id);
+                  const isSuggestedNormal = !isSelectedToday && !doneThisWeek && cardioSuggestedIds.has(t.id);
                   return (
                     <button key={t.id} onClick={() => handleCardioTap(t.id)}
                       className={cn(
