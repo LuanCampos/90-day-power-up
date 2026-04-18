@@ -383,18 +383,18 @@ export function getPillarSuggestion(params: {
   const loggedId = pillar === "workout" ? todayLog.workout : todayLog.cardio;
   const { firstDay: blockFirst, lastDay: blockLast } = challengeBlockDayRange(dayNumber);
 
+  // "Pendente" só aparece quando o usuário pode resolver: no dia atual ou em dias futuros
+  // do bloco. Dias passados sendo visualizados não devem mostrar pendência neles mesmos.
+  const isViewingPastDay =
+    referenceDayNumber != null && dayNumber < referenceDayNumber;
   const overdueThroughDay =
-    referenceDayNumber == null || referenceDayNumber <= blockFirst
+    referenceDayNumber == null || referenceDayNumber <= blockFirst || isViewingPastDay
       ? null
       : Math.min(referenceDayNumber - 1, blockLast);
-  const viewedDayIsOverdue = overdueThroughDay != null && dayNumber <= overdueThroughDay;
 
   if (dayTemplateId) {
     if (loggedId) return { status: "done" };
     const t = templates.find((t) => t.id === dayTemplateId);
-    if (viewedDayIsOverdue) {
-      return { status: "catchup-single", templateId: dayTemplateId, templateName: t?.name };
-    }
     return { status: "suggested", templateId: dayTemplateId, templateName: t?.name };
   }
 

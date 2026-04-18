@@ -606,7 +606,7 @@ describe("getPillarSuggestion", () => {
     expect(result).toEqual({ status: "rest" });
   });
 
-  it("marks a viewed past scheduled day as pending once it is overdue in real time", () => {
+  it("does NOT mark a viewed past scheduled day as pending — user cannot act on the past", () => {
     const result = getPillarSuggestion({
       pillar: "workout",
       dayNumber: 1,
@@ -617,10 +617,23 @@ describe("getPillarSuggestion", () => {
       templates: workoutTemplates,
     });
     expect(result).toEqual({
-      status: "catchup-single",
+      status: "suggested",
       templateId: "w1",
       templateName: "Upper A",
     });
+  });
+
+  it("on a past rest day, does NOT surface catch-up pendings (only current/future days do)", () => {
+    const result = getPillarSuggestion({
+      pillar: "workout",
+      dayNumber: 3,
+      referenceDayNumber: 5,
+      todayLog: emptyLog("2026-04-03"),
+      schedule,
+      blockDoneIds: new Set(),
+      templates: workoutTemplates,
+    });
+    expect(result).toEqual({ status: "rest" });
   });
 
   it("works for cardio pillar — suggested", () => {
