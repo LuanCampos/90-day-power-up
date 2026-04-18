@@ -4,6 +4,7 @@ import {
   challengeBlockDayRange,
   challengeWeekMilestoneId,
   defaultChallengeViewBlockFirstDay,
+  getCurrentDayPillarPending,
   getChallengeBlockStats,
   getDailyCaloriesTotal,
   getDailySuggestion,
@@ -636,6 +637,19 @@ describe("getPillarSuggestion", () => {
     expect(result).toEqual({ status: "rest" });
   });
 
+  it("viewing a future scheduled day shows only the scheduled suggestion, not past pending items", () => {
+    const result = getPillarSuggestion({
+      pillar: "workout",
+      dayNumber: 5,
+      referenceDayNumber: 3,
+      todayLog: emptyLog("2026-04-05"),
+      schedule,
+      blockDoneIds: new Set(),
+      templates: workoutTemplates,
+    });
+    expect(result).toEqual({ status: "suggested", templateId: "w4", templateName: "Lower B" });
+  });
+
   it("works for cardio pillar — suggested", () => {
     const result = getPillarSuggestion({
       pillar: "cardio",
@@ -669,5 +683,20 @@ describe("getPillarSuggestion", () => {
       blockDoneIds: new Set(),
       templates: workoutTemplates,
     })).toBeNull();
+  });
+
+  it("getCurrentDayPillarPending returns only overdue items up to yesterday", () => {
+    const result = getCurrentDayPillarPending({
+      pillar: "workout",
+      currentDayNumber: 5,
+      schedule,
+      blockDoneIds: new Set(["w1"]),
+      templates: workoutTemplates,
+    });
+    expect(result).toEqual({
+      status: "catchup-multi",
+      pendingIds: ["w2", "w3"],
+      pendingCount: 2,
+    });
   });
 });

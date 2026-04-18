@@ -343,6 +343,47 @@ export interface PillarSuggestion {
   pendingCount?: number;
 }
 
+export function getCurrentDayPillarPending(params: {
+  pillar: "workout" | "cardio";
+  currentDayNumber: number;
+  schedule: DailyScheduleEntry[];
+  blockDoneIds: Set<string>;
+  templates: { id: string; name: string }[];
+}): PillarSuggestion | null {
+  const { pillar, currentDayNumber, schedule, blockDoneIds, templates } = params;
+
+  if (schedule.length !== 7) return null;
+
+  const { firstDay: blockFirst, lastDay: blockLast } = challengeBlockDayRange(currentDayNumber);
+  const overdueThroughDay = Math.min(currentDayNumber - 1, blockLast);
+  if (overdueThroughDay < blockFirst) return null;
+
+  const overdueScheduledIds = new Set<string>();
+  for (let day = blockFirst; day <= overdueThroughDay; day++) {
+    const scheduledEntry = getDailySuggestion(day, schedule);
+    const id = pillar === "workout" ? scheduledEntry?.workoutId : scheduledEntry?.cardioId;
+    if (id) overdueScheduledIds.add(id);
+  }
+
+  const pendingIds = [...overdueScheduledIds].filter((id) => !blockDoneIds.has(id));
+  if (pendingIds.length === 0) return null;
+
+  if (pendingIds.length === 1) {
+    const t = templates.find((t) => t.id === pendingIds[0]);
+    return {
+      status: "catchup-single",
+      templateId: pendingIds[0],
+      templateName: t?.name,
+    };
+  }
+
+  return {
+    status: "catchup-multi",
+    pendingIds,
+    pendingCount: pendingIds.length,
+  };
+}
+
 /**
  * Determines the suggestion state for a single pillar (workout or cardio).
  *
@@ -384,7 +425,7 @@ export function getPillarSuggestion(params: {
   const { firstDay: blockFirst, lastDay: blockLast } = challengeBlockDayRange(dayNumber);
 
   const overdueThroughDay =
-    referenceDayNumber == null || referenceDayNumber <= blockFirst
+    referenceDayNumber == null || referenceDayNumber <= blockFirst || dayNumber > referenceDayNumber
       ? null
       : Math.min(dayNumber, referenceDayNumber - 1, blockLast);
 
